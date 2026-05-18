@@ -47,11 +47,10 @@ Thumbs.db
 .idea/
 
 # Misc debug files
-*.txt
-!README.md
+*.log
 *.csv
-*.json
-!package.json
-!package-lock.json
-!frontend/package.json
-!frontend/package-lock.json
+
+# Allow .env.example files (these are safe templates)
+!*.env.example
+!backend/.env.example
+!frontend/.env.example
