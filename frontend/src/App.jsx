@@ -23,6 +23,8 @@ import DiseaseSpreadSimulator from './FarmerModule/Tools/DiseaseSpreadSimulator'
 import SmartFarmingTimeline from './FarmerModule/Tools/SmartFarmingTimeline';
 import ResearchViewer from './FarmerModule/Research/ResearchViewer';
 
+import FarmingChatBot from './FarmerModule/FarmingChatBot';
+
 function AppContent() {
   const { t } = useLanguage();
   const location = useLocation();
@@ -104,9 +106,9 @@ function AppContent() {
               <ImpactSimulator />
             </ProtectedRoute>
           } />
-          <Route path="/tools/impact-simulator" element={
+          <Route path="/chat" element={
             <ProtectedRoute>
-              <ImpactSimulator />
+              <FarmingChatBot />
             </ProtectedRoute>
           } />
           <Route path="/tools/future-growth" element={

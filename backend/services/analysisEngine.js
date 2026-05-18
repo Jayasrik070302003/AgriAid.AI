@@ -1,49 +1,55 @@
-const { chat } = require('./openrouterService');
+const { groqVision, groqChatResponse, groqSimulationSummary } = require('./groqAnalyzer');
+const { geminiTreatmentAdvice, geminiWeatherAdvisory, geminiSpreadAnalysis, geminiFallbackChat } = require('./geminiAdvisor');
 
-async function analyzeCropImage(imageUrl, cropType, farmingType, location) {
-    const messages = [
-        { role: 'system', content: 'You are AgriAid.AI, an expert agricultural AI. Always respond in valid JSON only.' },
-        { role: 'user', content: [
-            { type: 'text', text: `Analyze this ${cropType} crop image from ${location.district}, ${location.state}. Farming: ${farmingType}.\nReturn ONLY JSON:\n{"crop":"${cropType}","disease":"name or Healthy","severity":"Low|Medium|High","confidence":0-100,"status":"Healthy|Diseased|Warning","treatment":{"fertilizer":"","quantity":"","instructions":""},"prevention":"","message":""}` },
-            { type: 'image_url', image_url: { url: imageUrl } }
-        ]}
-    ];
-    const raw = await chat(messages, { temperature: 0.3, maxTokens: 1024 });
-    return JSON.parse(raw.replace(/```json|```/g, '').trim());
+// STEP 1: Groq analyzes image → disease detection
+// STEP 2: Gemini generates treatment + advice
+async function analyzeCropImage(imageUrl, cropType, farmingType, location, weather = null) {
+    // Step 1 — Groq Vision: detect disease
+    let detection;
+    try {
+        detection = await groqVision(imageUrl, cropType, `${location.district}, ${location.state}`);
+    } catch (err) {
+        console.warn('[Groq Vision] Failed, using fallback detection:', err.message);
+        detection = { crop: cropType, disease: 'Unknown', severity: 'Medium', confidence: 60, status: 'Warning' };
+    }
+
+    // Step 2 — Gemini: generate treatment advice
+    let treatment;
+    try {
+        treatment = await geminiTreatmentAdvice(detection.disease, detection.severity, cropType, farmingType, weather);
+    } catch (err) {
+        console.warn('[Gemini Treatment] Failed, using fallback:', err.message);
+        treatment = {
+            treatment: { fertilizer: 'Consult local agronomist', quantity: 'As advised', instructions: 'Seek expert guidance.' },
+            prevention: 'Monitor crop regularly.',
+            organicAlternative: 'Neem oil spray',
+            urgency: 'Within 3 days',
+            farmerNote: 'Please consult your local agriculture officer for specific advice.'
+        };
+    }
+
+    return { ...detection, ...treatment };
 }
 
 async function getChatResponse(userMessage) {
-    const messages = [
-        { role: 'system', content: 'You are Farmer Assistant for AgriAid.AI. Help Indian farmers with crops, diseases, soil, fertilizers. Use simple English with 2-3 emojis. Use Indian seasons (Kharif, Rabi, Zaid). For non-agriculture questions, politely redirect.' },
-        { role: 'user', content: userMessage }
-    ];
-    return chat(messages, { temperature: 0.7, maxTokens: 1024 });
+    try {
+        return await groqChatResponse(userMessage);
+    } catch (err) {
+        console.warn('[Groq Chat] Failed, falling back to Gemini:', err.message);
+        return geminiFallbackChat(userMessage);
+    }
 }
 
 async function getSimulationExplanation(crop, area, organic, chemical, language = 'English') {
-    const messages = [
-        { role: 'system', content: 'You are an expert agriculture consultant. Be concise and data-backed.' },
-        { role: 'user', content: `Compare farming for ${crop} on ${area} acres in ${language}:\nChemical: Yield ${chemical.yield}kg, Profit Rs${chemical.profit}, Soil ${chemical.soilHealth}%.\nOrganic: Yield ${organic.yield}kg, Profit Rs${organic.profit}, Soil ${organic.soilHealth}%.\nGive 3 bullet points mentioning profit difference of Rs${Math.abs(organic.profit - chemical.profit).toFixed(0)}.` }
-    ];
-    return chat(messages, { temperature: 0.6, maxTokens: 512 });
+    return groqSimulationSummary(crop, area, organic, chemical, language);
 }
 
 async function getSpreadAnalysis(cropName, diseaseName, spreadData, weather) {
-    const messages = [
-        { role: 'system', content: 'You are an agricultural AI. Return ONLY valid JSON.' },
-        { role: 'user', content: `Disease spread for ${cropName} with ${diseaseName}.\n7-day: ${spreadData.risk7}%, 14-day: ${spreadData.risk14}%, Mutation: ${spreadData.mutationRisk}%.\nWeather: ${weather.temp?.toFixed(1)}C, ${weather.humidity?.toFixed(1)}% humidity.\nReturn: {"status":"Diseased|Warning|Healthy","message":"farmer-friendly message","advice":"treatment"}` }
-    ];
-    const raw = await chat(messages, { temperature: 0.3, maxTokens: 512 });
-    return JSON.parse(raw.replace(/```json|```/g, '').trim());
+    return geminiSpreadAnalysis(cropName, diseaseName, spreadData, weather);
 }
 
-async function refineWeatherData(location, weatherData) {
-    const messages = [
-        { role: 'system', content: 'You are an agricultural weather advisor. Return ONLY valid JSON.' },
-        { role: 'user', content: `Refine weather for ${location} and give farming advisory.\nData: ${JSON.stringify(weatherData)}\nReturn: {"location":"","summary":"","temperature":"","condition":"","humidity":"","wind":"","precipitation":"","uv_index":"","advisory":"","alerts":"","refined_forecast":[]}` }
-    ];
-    const raw = await chat(messages, { temperature: 0.4, maxTokens: 1024 });
-    return JSON.parse(raw.replace(/```json|```/g, '').trim());
+async function getWeatherAdvisory(location, weatherData) {
+    return geminiWeatherAdvisory(location, weatherData);
 }
 
-module.exports = { analyzeCropImage, getChatResponse, getSimulationExplanation, getSpreadAnalysis, refineWeatherData };
+module.exports = { analyzeCropImage, getChatResponse, getSimulationExplanation, getSpreadAnalysis, getWeatherAdvisory };

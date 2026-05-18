@@ -1,31 +1,63 @@
 const axios = require('axios');
 
-const OW_BASE = 'https://api.openweathermap.org/data/2.5';
+// Open-Meteo — 100% FREE, no API key, no credit card
+const GEO_URL     = 'https://geocoding-api.open-meteo.com/v1/search';
+const WEATHER_URL = 'https://api.open-meteo.com/v1/forecast';
 
-async function getWeather(lat, lon) {
-    const key = process.env.OPENWEATHER_API_KEY;
-    if (!key) throw new Error('OPENWEATHER_API_KEY not configured');
-    const [current, forecast] = await Promise.all([
-        axios.get(`${OW_BASE}/weather`, { params: { lat, lon, appid: key, units: 'metric' } }),
-        axios.get(`${OW_BASE}/forecast`, { params: { lat, lon, appid: key, units: 'metric', cnt: 7 } })
-    ]);
-    const c = current.data;
+const WMO_CONDITIONS = {
+    0: 'Clear Sky', 1: 'Mainly Clear', 2: 'Partly Cloudy', 3: 'Overcast',
+    45: 'Foggy', 48: 'Icy Fog',
+    51: 'Light Drizzle', 53: 'Drizzle', 55: 'Heavy Drizzle',
+    61: 'Light Rain', 63: 'Rain', 65: 'Heavy Rain',
+    80: 'Showers', 81: 'Heavy Showers', 82: 'Violent Showers',
+    95: 'Thunderstorm', 96: 'Thunderstorm with Hail', 99: 'Heavy Thunderstorm'
+};
+
+async function getWeatherByCoords(lat, lon) {
+    const res = await axios.get(WEATHER_URL, {
+        params: {
+            latitude: lat, longitude: lon,
+            current: 'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,precipitation,surface_pressure',
+            daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,uv_index_max',
+            timezone: 'auto',
+            forecast_days: 7
+        },
+        timeout: 15000
+    });
+
+    const c = res.data.current;
+    const d = res.data.daily;
+
     return {
-        temp: c.main.temp, feelsLike: c.main.feels_like, humidity: c.main.humidity,
-        wind: c.wind.speed, condition: c.weather[0].main, description: c.weather[0].description,
-        pressure: c.main.pressure, visibility: (c.visibility / 1000).toFixed(1),
-        precipitation: c.rain?.['1h'] || 0,
-        daily: forecast.data.list.slice(0, 7).map(d => ({ time: d.dt_txt, temp: d.main.temp, condition: d.weather[0].main }))
+        temp: c.temperature_2m,
+        feelsLike: c.apparent_temperature,
+        humidity: c.relative_humidity_2m,
+        wind: c.wind_speed_10m,
+        condition: WMO_CONDITIONS[c.weather_code] || 'Unknown',
+        weatherCode: c.weather_code,
+        pressure: c.surface_pressure,
+        precipitation: c.precipitation,
+        daily: d.time.map((date, i) => ({
+            date,
+            condition: WMO_CONDITIONS[d.weather_code[i]] || 'Unknown',
+            tempMax: d.temperature_2m_max[i],
+            tempMin: d.temperature_2m_min[i],
+            precipitation: d.precipitation_sum[i],
+            uvIndex: d.uv_index_max[i]
+        }))
     };
 }
 
 async function getWeatherByCity(city) {
-    const key = process.env.OPENWEATHER_API_KEY;
-    if (!key) throw new Error('OPENWEATHER_API_KEY not configured');
-    const geo = await axios.get('http://api.openweathermap.org/geo/1.0/direct', { params: { q: `${city},IN`, limit: 1, appid: key } });
-    if (!geo.data.length) throw new Error(`City not found: ${city}`);
-    const { lat, lon } = geo.data[0];
-    return getWeather(lat, lon);
+    const geo = await axios.get(GEO_URL, {
+        params: { name: city, count: 1, language: 'en', format: 'json' },
+        timeout: 10000
+    });
+
+    if (!geo.data.results?.length) throw new Error(`City not found: ${city}`);
+    const { latitude, longitude, name, admin1, country } = geo.data.results[0];
+    const weather = await getWeatherByCoords(latitude, longitude);
+    return { ...weather, location: `${name}, ${admin1 || country}`, lat: latitude, lon: longitude };
 }
 
-module.exports = { getWeather, getWeatherByCity };
+module.exports = { getWeatherByCoords, getWeatherByCity };

@@ -30,18 +30,17 @@ const LoginPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setIsLoading(true);
         const loginToast = toast.loading(t('login_progress') || 'Securing your session...');
-
-        // Simulate API call for now
-        setTimeout(() => {
-            setIsLoading(false);
-            login({
-                name: 'Test Farmer',
-                email: formData.email,
-            });
+        try {
+            await login({ email: formData.email, password: formData.password });
             toast.success(t('login_success') || 'Welcome back to AgriAid!', { id: loginToast });
             navigate(from, { replace: true });
-        }, 1500);
+        } catch (err) {
+            toast.error(err.message || 'Login failed. Check your credentials.', { id: loginToast });
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (

@@ -520,44 +520,28 @@ const ImageUploadForm = () => {
 
     const getTranslatedResult = () => {
         if (!result) return null;
-        const diseaseKey = result.diseaseAnalysis.disease.toLowerCase().replace(/ /g, '_');
+        const disease = result.diseaseAnalysis?.disease || 'Unknown';
+        const diseaseKey = disease.toLowerCase().replace(/ /g, '_');
 
-        // Helper to prioritize translation but fallback to backend if translation is missing (returns key)
         const getText = (key, fallback) => {
             const val = t(key);
-            // If t() returns the key itself (common i18n behavior for missing keys), use fallback
             return (val && val !== key) ? val : fallback;
         };
 
-        // Map backend weather strings to translation keys
-        const weatherMap = {
-            'High humidity detected. Risk of fungal spread is elevated.': 'weather_humidity',
-            'Dry and sunny. Ensure adequate irrigation.': 'weather_dry',
-            'Cloudy weather expected. Avoid spraying chemicals today.': 'weather_cloudy',
-            ' Optimal conditions for fertilizer application.': 'weather_optimal'
-        };
-
-        const weatherKey = result.weatherNote ? weatherMap[result.weatherNote] : null;
-        const translatedWeather = weatherKey ? t(weatherKey) : result.weatherNote;
-
-        // Base Instruction from Translation or Backend
-        const baseInstruction = getText(`rec_${diseaseKey}_inst`, result.recommendation.instructions);
-
-        // Dynamic Context: "For Tomato in Pune: ..."
-        // Note: We use the current form state (cropType, district) for this personalization
         const translatedCrop = t(`crop_${cropType.toLowerCase()}`) || cropType;
-        const contextString = `${t('rec_for')} ${translatedCrop} ${t('rec_in')} ${district}: `;
+        const contextString = district ? `${t('rec_for') || 'For'} ${translatedCrop} ${t('rec_in') || 'in'} ${district}: ` : '';
+        const baseInstruction = getText(`rec_${diseaseKey}_inst`, result.recommendation?.instructions || result.recommendation?.farmerNote || '');
 
         return {
-            diseaseName: getText(`disease_${diseaseKey}`, result.diseaseAnalysis.disease.replace(/_/g, ' ')),
-            fertilizer: getText(`rec_${diseaseKey}_fert`, result.recommendation.fertilizer),
-            dosage: getText(`rec_${diseaseKey}_dose`, result.recommendation.quantity),
+            diseaseName: getText(`disease_${diseaseKey}`, disease.replace(/_/g, ' ')),
+            fertilizer: getText(`rec_${diseaseKey}_fert`, result.recommendation?.fertilizer || 'Consult agronomist'),
+            dosage: getText(`rec_${diseaseKey}_dose`, result.recommendation?.quantity || 'As advised'),
             instructions: `${contextString}${baseInstruction}`,
-            isLowConfidence: result.diseaseAnalysis.is_low_confidence,
-            confidence: result.diseaseAnalysis.confidence,
-            weather: translatedWeather,
-            message: result.diseaseAnalysis.message,
-            topPredictions: result.diseaseAnalysis.top_predictions || []
+            isLowConfidence: (result.diseaseAnalysis?.confidence || 0) < 60,
+            confidence: result.diseaseAnalysis?.confidence || 0,
+            weather: result.weatherNote || null,
+            message: result.recommendation?.farmerNote || null,
+            topPredictions: []
         };
     };
 

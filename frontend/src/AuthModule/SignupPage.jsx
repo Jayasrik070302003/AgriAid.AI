@@ -9,7 +9,7 @@ import Loader from '../SharedComponents/Loader';
 
 const SignupPage = () => {
     const { t } = useLanguage();
-    const { login } = useAuth();
+    const { signup } = useAuth();
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
@@ -39,18 +39,17 @@ const SignupPage = () => {
             return;
         }
 
+        setIsLoading(true);
         const signupToast = toast.loading(t('signup_progress') || 'Creating your account...');
-
-        // Simulate API call for now
-        setTimeout(() => {
+        try {
+            await signup({ name: formData.name, email: formData.email, password: formData.password });
+            toast.success(t('signup_success') || 'Account created! Check your email to confirm.', { id: signupToast });
+            navigate('/');
+        } catch (err) {
+            toast.error(err.message || 'Signup failed.', { id: signupToast });
+        } finally {
             setIsLoading(false);
-            login({
-                name: formData.name,
-                email: formData.email,
-            });
-            toast.success(t('signup_success') || 'Account created successfully!', { id: signupToast });
-            navigate("/");
-        }, 1500);
+        }
     };
 
     return (
