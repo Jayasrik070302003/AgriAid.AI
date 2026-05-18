@@ -13,6 +13,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 *
 // Crop Analysis
 router.post('/analyze', upload.single('image'), farmerController.analyzeCrop);
 router.get('/history', farmerController.getHistory);
+router.get('/crop-groups', farmerController.getCropGroups);
 router.delete('/history/:id', farmerController.deleteHistory);
 router.post('/chat', farmerController.chatWithFarmer);
 

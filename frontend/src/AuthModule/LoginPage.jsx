@@ -15,6 +15,7 @@ const LoginPage = () => {
     const from = location.state?.from?.pathname || "/";
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [error, setError] = useState('');
     const [formData, setFormData] = useState({
         email: '',
         password: ''
@@ -31,13 +32,16 @@ const LoginPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true);
+        setError('');
         const loginToast = toast.loading(t('login_progress') || 'Securing your session...');
         try {
             await login({ email: formData.email, password: formData.password });
             toast.success(t('login_success') || 'Welcome back to AgriAid!', { id: loginToast });
             navigate(from, { replace: true });
         } catch (err) {
-            toast.error(err.message || 'Login failed. Check your credentials.', { id: loginToast });
+            const msg = err.message || 'Login failed. Check your credentials.';
+            setError(msg);
+            toast.dismiss(loginToast);
         } finally {
             setIsLoading(false);
         }
@@ -110,6 +114,17 @@ const LoginPage = () => {
                             </p>
                         </motion.div>
                     </div>
+
+                    {error && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="mb-4 flex items-start gap-3 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3"
+                        >
+                            <span className="text-red-400 mt-0.5">⚠️</span>
+                            <p className="text-red-300 text-sm font-medium">{error}</p>
+                        </motion.div>
+                    )}
 
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div className="space-y-1.5">

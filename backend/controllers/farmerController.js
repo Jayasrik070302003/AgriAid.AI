@@ -129,6 +129,26 @@ exports.getHistory = async (req, res) => {
     }
 };
 
+exports.getCropGroups = async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('crop_scans')
+            .select('crop_name, disease_name');
+        if (error) throw error;
+        const groups = data.reduce((acc, row) => {
+            const crop = row.crop_name || 'Unknown';
+            if (!acc[crop]) acc[crop] = [];
+            if (row.disease_name && !acc[crop].includes(row.disease_name))
+                acc[crop].push(row.disease_name);
+            return acc;
+        }, {});
+        res.status(200).json({ success: true, data: groups });
+    } catch (err) {
+        logger.error(`getCropGroups error: ${err.message}`);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
 exports.deleteHistory = async (req, res) => {
     try {
         const { id } = req.params;
