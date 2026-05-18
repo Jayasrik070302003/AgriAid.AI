@@ -1,0 +1,53 @@
+-- AgriAid.AI — Supabase PostgreSQL Schema
+-- Run this in Supabase SQL Editor
+
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    role TEXT DEFAULT 'farmer' CHECK (role IN ('farmer', 'admin')),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS crop_scans (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    crop_name TEXT,
+    disease_name TEXT,
+    severity TEXT,
+    confidence NUMERIC(5,2),
+    image_url TEXT,
+    recommendation JSONB,
+    weather_summary TEXT,
+    district TEXT,
+    state TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS ai_reports (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    scan_id UUID REFERENCES crop_scans(id) ON DELETE CASCADE,
+    recommendation TEXT,
+    weather_summary TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS simulations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    sim_type TEXT DEFAULT 'impact' CHECK (sim_type IN ('impact', 'future_growth', 'disease_spread')),
+    crop_type TEXT,
+    soil_type TEXT,
+    yield_prediction TEXT,
+    risk_level TEXT,
+    result_data JSONB,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_crop_scans_user ON crop_scans(user_id);
+CREATE INDEX IF NOT EXISTS idx_simulations_user ON simulations(user_id);
+CREATE INDEX IF NOT EXISTS idx_crop_scans_created ON crop_scans(created_at DESC);
+
+-- Storage Buckets (create via Supabase Dashboard)
+-- Bucket: crop-images (public)
+-- Bucket: reports (private)
