@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calculator, Sprout, Leaf, ArrowRight, RefreshCw, Beaker, Info, CheckCircle2, IndianRupee, ShoppingBag, ChevronDown, Check } from 'lucide-react';
+import { Calculator, Sprout, Leaf, ArrowRight, RefreshCw, Beaker, Info, CheckCircle2, IndianRupee, ShoppingBag, ChevronDown, Check, Clock, AlertTriangle, Droplets } from 'lucide-react';
+import apiClient from '../../services/apiClient';
 
 const FertilizerCalculator = () => {
     const [area, setArea] = useState('');
@@ -8,6 +9,7 @@ const FertilizerCalculator = () => {
     const [crop, setCrop] = useState('');
     const [result, setResult] = useState(null);
     const [calculating, setCalculating] = useState(false);
+    const [advisory, setAdvisory] = useState(null);
 
     const crops = [
         { name: 'Paddy (Rice)', n: 40, p: 20, k: 20 },
@@ -20,55 +22,47 @@ const FertilizerCalculator = () => {
         { name: 'Onion', n: 45, p: 20, k: 30 }
     ];
 
-    const calculate = () => {
+    const calculate = async () => {
         if (!area || isNaN(area)) {
-            alert("Please enter a valid land area.");
+            alert('Please enter a valid land area.');
             return;
         }
-
         setCalculating(true);
         setResult(null);
+        setAdvisory(null);
 
-        setTimeout(() => {
-            const selectedCrop = crops.find(c => c.name === crop) || crops[0];
-            const areaNum = parseFloat(area);
+        const selectedCrop = crops.find(c => c.name === crop) || crops[0];
+        const areaNum = parseFloat(area);
+        const multiplier = unit === 'Acres' ? 1 : 2.471;
+        const reqN = selectedCrop.n * areaNum * multiplier;
+        const reqP = selectedCrop.p * areaNum * multiplier;
+        const reqK = selectedCrop.k * areaNum * multiplier;
+        const dap = Math.ceil(reqP / 0.46);
+        const nSuppliedByDap = dap * 0.18;
+        const remainingN = reqN - nSuppliedByDap;
+        const urea = remainingN > 0 ? Math.ceil(remainingN / 0.46) : 0;
+        const mop = Math.ceil(reqK / 0.60);
+        const cost = Math.round((urea * 6) + (dap * 27) + (mop * 34));
 
-            // Conversion: 1 Hectare = 2.471 Acres
-            const multiplier = unit === 'Acres' ? 1 : 2.471;
+        const calcResult = {
+            urea, dap, mop,
+            total: urea + dap + mop,
+            bags: Math.ceil((urea + dap + mop) / 50),
+            cost: cost.toLocaleString('en-IN')
+        };
+        setResult(calcResult);
 
-            // Total Nutrient Requirements for the field (in kg)
-            const reqN = selectedCrop.n * areaNum * multiplier;
-            const reqP = selectedCrop.p * areaNum * multiplier;
-            const reqK = selectedCrop.k * areaNum * multiplier;
-
-            // 1. Calculate DAP (Contains 46% P and 18% N)
-            const dap = Math.ceil(reqP / 0.46);
-
-            // 2. Calculate N supplied by DAP
-            const nSuppliedByDap = dap * 0.18;
-
-            // 3. Calculate Remaining N needed
-            const remainingN = reqN - nSuppliedByDap;
-
-            // 4. Calculate Urea (Contains 46% N) for remaining N
-            const urea = remainingN > 0 ? Math.ceil(remainingN / 0.46) : 0;
-
-            // 5. Calculate MOP (Contains 60% K)
-            const mop = Math.ceil(reqK / 0.60);
-
-            // Cost Estimation (Approx Indian Market Rates 2024)
-            const cost = Math.round((urea * 6) + (dap * 27) + (mop * 34));
-
-            setResult({
-                urea,
-                dap,
-                mop,
-                total: urea + dap + mop,
-                bags: Math.ceil((urea + dap + mop) / 50),
-                cost: cost.toLocaleString('en-IN')
+        // Groq AI advisory
+        try {
+            const res = await apiClient.post('/api/farmer/tools/fertilizer-advisory', {
+                crop, area, unit, urea, dap, mop
             });
+            setAdvisory(res.data.data);
+        } catch (e) {
+            console.warn('Advisory fetch failed:', e.message);
+        } finally {
             setCalculating(false);
-        }, 1200);
+        }
     };
 
     return (
@@ -212,29 +206,51 @@ const FertilizerCalculator = () => {
                                     />
                                 </div>
 
-                                {/* Schedule / Advisory */}
-                                <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex items-start gap-4 dark:bg-slate-800 dark:border-slate-700">
-                                    <div className="p-3 bg-blue-50 rounded-xl text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                                        <Info className="h-6 w-6" />
+                                {/* AI Advisory */}
+                                {advisory ? (
+                                    <div className="space-y-4">
+                                        <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm dark:bg-slate-800 dark:border-slate-700">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="p-3 bg-blue-50 rounded-xl text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"><Info className="h-5 w-5" /></div>
+                                                <h4 className="font-bold text-gray-900 dark:text-white">AI Application Schedule</h4>
+                                            </div>
+                                            <div className="space-y-3">
+                                                {advisory.application_schedule?.map((s, i) => (
+                                                    <div key={i} className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
+                                                        <span className="w-6 h-6 shrink-0 bg-emerald-500 text-white text-[10px] font-black rounded-full flex items-center justify-center">{i+1}</span>
+                                                        <div>
+                                                            <p className="text-xs font-black text-slate-800 dark:text-white">{s.stage} — Urea {s.urea_pct}% · DAP {s.dap_pct}% · MOP {s.mop_pct}%</p>
+                                                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{s.timing} · {s.method}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        {advisory.crop_specific_tips?.length > 0 && (
+                                            <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-3xl p-6 border border-emerald-100 dark:border-emerald-900/30">
+                                                <h4 className="font-bold text-emerald-900 dark:text-emerald-300 mb-3 flex items-center gap-2"><Sprout className="h-4 w-4" /> Crop-Specific Tips</h4>
+                                                <ul className="space-y-2">
+                                                    {advisory.crop_specific_tips.map((tip, i) => (
+                                                        <li key={i} className="text-xs text-emerald-800 dark:text-emerald-200 font-medium flex items-start gap-2">
+                                                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" />{tip}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                        {advisory.caution && (
+                                            <div className="bg-amber-50 dark:bg-amber-900/20 rounded-3xl p-5 border border-amber-100 dark:border-amber-900/30 flex gap-3">
+                                                <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                                                <p className="text-xs text-amber-800 dark:text-amber-200 font-medium">{advisory.caution}</p>
+                                            </div>
+                                        )}
                                     </div>
-                                    <div>
-                                        <h4 className="font-bold text-gray-900 mb-1 dark:text-white">Application Advisory</h4>
-                                        <p className="text-gray-500 text-sm leading-relaxed dark:text-slate-400">
-                                            For best results, apply the full dose of DAP and MOP during sowing (Basal Dose). Split the Urea application into 3 parts:
-                                            <span className="font-bold text-gray-700 dark:text-slate-300"> Basal (30%)</span>,
-                                            <span className="font-bold text-gray-700 dark:text-slate-300">
-                                                {crop.toLowerCase().includes('wheat') ? 'Crown Root Initiation' :
-                                                    crop.toLowerCase().includes('rice') || crop.toLowerCase().includes('paddy') ? 'Tillering' :
-                                                        crop.toLowerCase().includes('potato') ? 'Stolon Initiation' : 'Vegetative Stage'} (40%)
-                                            </span>, and
-                                            <span className="font-bold text-gray-700 dark:text-slate-300">
-                                                {crop.toLowerCase().includes('wheat') ? 'Jointing/Heading' :
-                                                    crop.toLowerCase().includes('rice') || crop.toLowerCase().includes('paddy') ? 'Panicle Initiation' :
-                                                        crop.toLowerCase().includes('potato') ? 'Tuber Bulk' : 'Reproductive Stage'} (30%)
-                                            </span>.
-                                        </p>
+                                ) : result && (
+                                    <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex items-center justify-center gap-3 dark:bg-slate-800 dark:border-slate-700">
+                                        <RefreshCw className="h-4 w-4 animate-spin text-emerald-500" />
+                                        <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Loading AI advisory...</p>
                                     </div>
-                                </div>
+                                )}
 
                             </motion.div>
                         ) : (

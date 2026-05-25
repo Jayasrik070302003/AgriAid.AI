@@ -1,12 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, User, Bot, X, Sparkles, Sprout, Loader2 } from 'lucide-react';
 import { useLanguage } from '../Context/LanguageContext';
-import axios from 'axios';
+import apiClient from '../services/apiClient';
 
 const FarmingChatBot = () => {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState([
         {
@@ -23,9 +23,66 @@ const FarmingChatBot = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
+    const triggerDirectMessage = useCallback(async (queryText) => {
+        if (!queryText.trim()) return;
+
+        const userMessage = {
+            id: Date.now(),
+            text: queryText,
+            sender: 'user'
+        };
+
+        setMessages(prev => [...prev, userMessage]);
+        setIsTyping(true);
+
+        try {
+            const response = await apiClient.post('/api/farmer/chat', { message: queryText, language });
+
+            const botResponse = {
+                id: Date.now() + 1,
+                text: response.data.reply,
+                sender: 'bot'
+            };
+            setMessages(prev => [...prev, botResponse]);
+        } catch (err) {
+            console.error("Chat API Error:", err);
+            const errorResponse = {
+                id: Date.now() + 1,
+                text: "I'm having trouble connecting to my brain right now. Please try again later.",
+                sender: 'bot'
+            };
+            setMessages(prev => [...prev, errorResponse]);
+        } finally {
+            setIsTyping(false);
+        }
+    }, [language]);
+
     useEffect(() => {
         scrollToBottom();
     }, [messages, isOpen]);
+
+    useEffect(() => {
+        const checkPendingQuery = () => {
+            const pending = sessionStorage.getItem('pendingChatQuery');
+            if (pending) {
+                sessionStorage.removeItem('pendingChatQuery');
+                setIsOpen(true);
+                triggerDirectMessage(pending);
+            }
+        };
+
+        checkPendingQuery();
+
+        const handleCustomEvent = (e) => {
+            if (e.detail && e.detail.query) {
+                setIsOpen(true);
+                triggerDirectMessage(e.detail.query);
+            }
+        };
+
+        window.addEventListener('triggerChatQuery', handleCustomEvent);
+        return () => window.removeEventListener('triggerChatQuery', handleCustomEvent);
+    }, [triggerDirectMessage]);
 
 
 
@@ -45,9 +102,8 @@ const FarmingChatBot = () => {
         setIsTyping(true);
 
         try {
-            const response = await axios.post('http://localhost:3001/api/farmer/chat', {
-                message: currentInput
-            });
+            const response = await apiClient.post('/api/farmer/chat', { message: currentInput, language });
+
 
             const botResponse = {
                 id: Date.now() + 1,

@@ -152,9 +152,13 @@ const LoginPage = () => {
                                 <label className="block text-[10px] font-bold text-emerald-200/70 uppercase tracking-wider">
                                     {t('login_password')}
                                 </label>
-                                <a href="#" className="text-[10px] font-semibold text-emerald-400 hover:text-emerald-300 transition-colors">
+                                <button
+                                    type="button"
+                                    onClick={() => toast('Password reset: contact support or use Supabase dashboard.', { icon: 'ℹ️' })}
+                                    className="text-[10px] font-semibold text-emerald-400 hover:text-emerald-300 transition-colors bg-transparent border-none cursor-pointer"
+                                >
                                     {t('login_forgot')}
-                                </a>
+                                </button>
                             </div>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-emerald-500/50 group-focus-within:text-emerald-400 transition-colors">

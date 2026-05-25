@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import axios from 'axios';
-import { API_BASE_URL } from '../config';
+import apiClient from '../services/apiClient';
 
 const GlobalStateContext = createContext();
 
@@ -20,11 +19,11 @@ export const GlobalStateProvider = ({ children }) => {
         console.log(`[Global Sync] Path changed to: ${location.pathname}. Syncing data...`);
         try {
             const [historyRes, groupsRes, simRes, growthRes, spreadRes] = await Promise.all([
-                axios.get(`${API_BASE_URL}/api/farmer/history`),
-                axios.get(`${API_BASE_URL}/api/farmer/crop-groups`),
-                axios.get(`${API_BASE_URL}/api/farmer/simulator/history`),
-                axios.get(`${API_BASE_URL}/api/farmer/future-growth/history`),
-                axios.get(`${API_BASE_URL}/api/farmer/spread-risk/history`)
+                apiClient.get(`/api/farmer/history`),
+                apiClient.get(`/api/farmer/crop-groups`),
+                apiClient.get(`/api/farmer/simulator/history`),
+                apiClient.get(`/api/farmer/future-growth/history`),
+                apiClient.get(`/api/farmer/spread-risk/history`)
             ]);
 
             const hData = historyRes.data.data || historyRes.data;
@@ -48,6 +47,7 @@ export const GlobalStateProvider = ({ children }) => {
     // Trigger on mount and every location change
     useEffect(() => {
         refreshGlobalData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [location.pathname]);
 
     return (

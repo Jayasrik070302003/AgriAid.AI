@@ -1,0 +1,177 @@
+# 🌾 AgriAid.AI — Codebase Audit & Project Analysis
+
+AgriAid.AI is an AI-powered smart agriculture platform designed to assist Indian farmers with crop disease diagnosis, customized farming advisories, weather intelligence, and ROI/growth simulations. This document provides a complete technical analysis of the project's codebase.
+
+---
+
+## 1. System Architecture & Data Flow
+
+AgriAid.AI uses a three-tier web application architecture integrating client-side React components, a backend REST API gateway, database services (Supabase PostgreSQL + Storage), and external AI/weather services.
+
+```mermaid
+graph TD
+    Client[React Frontend <br> Vite + Tailwind] -->|HTTP REST| Backend[Node.js / Express API]
+    Backend -->|Supabase Client SDK| DB[(Supabase PostgreSQL)]
+    Backend -->|S3 Upload| Storage[(Supabase Storage: crop-images)]
+    Backend -->|JSON POST| GroqAPI[Groq API <br> Llama 4 Scout Vision / Llama 3.3]
+    Backend -->|JSON POST| GeminiAPI[Gemini API <br> Gemini 2.0 Flash]
+    Backend -->|HTTP GET| OpenMeteo[Open-Meteo Weather API]
+```
+
+### End-to-End Crop Diagnostic Flow
+1. **Upload & Form Submission**: The farmer uploads a leaf image and inputs parameters (crop type, farming method, location) in `ImageUploadForm.jsx`.
+2. **Backend Interception**: The Express backend receives the image buffer using `multer.memoryStorage()`.
+3. **Image Storage**: The backend uploads the image directly to the Supabase Storage bucket `crop-images` and retrieves a public URL.
+4. **Context Gathering**: The backend fetches real-time weather information from Open-Meteo using the location's district/state.
+5. **AI Vision Recognition (Groq)**: The image URL is sent to the Groq API using the `meta-llama/llama-4-scout-17b-16e-instruct` model to identify the disease and severity.
+6. **Treatment Generation (Gemini)**: The diagnosed disease, severity, crop type, farming method, and weather context are passed to the Gemini API (`gemini-2.0-flash`) to generate structured recommendations (chemical and organic treatments, prevention guidelines, urgency).
+7. **Database Persistence**: The diagnostic result, image URL, weather data, and recommendations are stored in the `crop_scans` table.
+8. **Client Display**: The React frontend displays the structured cards highlighting the diagnosis, severity meter, and organic/chemical instructions.
+
+---
+
+## 2. Technical Stack Analysis
+
+| Layer | Technologies Used | Purpose |
+| :--- | :--- | :--- |
+| **Frontend** | React 19, Vite, Tailwind CSS, Framer Motion, Recharts, Lucide Icons | Responsive, glassmorphic UI, smooth micro-animations, and visual trends. |
+| **Backend** | Node.js, Express, Axios, Multer | API Gateway, file parsing, orchestration of AI models and weather APIs. |
+| **Database** | Supabase (PostgreSQL) | User authentication records, scan logs, simulation histories, and geocoded entries. |
+| **Storage** | Supabase Storage Bucket | Public asset hosting for uploaded crop scan images (`crop-images`). |
+| **AI Gateway** | Groq & Gemini APIs | Hybrid AI pipeline (Vision Classification + Advisory Generation). |
+| **Weather** | Open-Meteo API | Geocoding and weather advisories without requiring API key authorization. |
+
+---
+
+## 3. Database Schema Comparison
+
+There is a major discrepancy between the **Initial Specification** (`Project_Specification.md`) and the **Actual Implementation** (`database/schema.sql` vs. `backend/database/schema.sql`).
+
+*   **Project Specification Proposal (MySQL)**: Outlined a highly normalized structure with 12 distinct relational tables (e.g., separate tables for `soil_data`, `fertilizers`, `weather_data`, `admin_logs`, and `model_metrics`).
+*   **Actual Production Database (Supabase PostgreSQL)**: Employs a simplified, JSON-flexible design with 4 tables.
+
+### Actual Schema Table Breakdown
+
+#### 1. `users` Table
+Stores user profile information.
+```sql
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    role TEXT DEFAULT 'farmer' CHECK (role IN ('farmer', 'admin')),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+#### 2. `crop_scans` Table
+Primary registry for crop leaf diagnoses and advisories.
+```sql
+CREATE TABLE IF NOT EXISTS crop_scans (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    crop_name TEXT,
+    disease_name TEXT,
+    severity TEXT,
+    confidence NUMERIC(5,2),
+    image_url TEXT,
+    recommendation JSONB, -- Stores nested organic/chemical instructions
+    weather_summary TEXT,
+    district TEXT,
+    state TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+#### 3. `ai_reports` Table
+Stores advanced agricultural audit reports linked to scans.
+```sql
+CREATE TABLE IF NOT EXISTS ai_reports (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    scan_id UUID REFERENCES crop_scans(id) ON DELETE CASCADE,
+    recommendation TEXT,
+    weather_summary TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+#### 4. `simulations` Table
+Consolidates all simulation logs (impact, growth, and disease spread).
+```sql
+CREATE TABLE IF NOT EXISTS simulations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    sim_type TEXT DEFAULT 'impact' CHECK (sim_type IN ('impact', 'future_growth', 'disease_spread')),
+    crop_type TEXT,
+    soil_type TEXT,
+    yield_prediction TEXT,
+    risk_level TEXT,
+    result_data JSONB, -- Dynamic JSON payload capturing simulation parameters
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+---
+
+## 4. API Endpoint Map (`backend/routes/farmer.routes.js`)
+
+All routes use a `/api/farmer` base prefix:
+
+| Endpoint | Method | Controller Handler | Purpose |
+| :--- | :--- | :--- | :--- |
+| `/analyze` | `POST` | `farmerController.analyzeCrop` | Uploads leaf image, runs Groq + Gemini diagnosis, and returns results. |
+| `/history` | `GET` | `farmerController.getHistory` | Fetches historical scan logs and chart/dashboard metrics. |
+| `/crop-groups` | `GET` | `farmerController.getCropGroups` | Groups recorded scans by crop and cataloged diseases. |
+| `/history/:id` | `DELETE`| `farmerController.deleteHistory` | Deletes a crop scan entry. |
+| `/chat` | `POST` | `farmerController.chatWithFarmer` | Multi-lingual chatbot conversation. |
+| `/simulator/compare` | `POST` | `simulatorController.simulateImpact`| Evaluates chemical vs. organic farming yield and ROI. |
+| `/simulator/history` | `GET` | `simulatorController.getSimulationHistory` | Fetches past organic-chemical simulations. |
+| `/future-growth/simulate`| `POST` | `futureGrowthController.simulateGrowth`| Projects 90-day health trends and yield potential. |
+| `/future-growth/history`| `GET` | `futureGrowthController.getHistory` | Fetches history logs for future growth simulations. |
+| `/spread-risk/predict` | `POST` | `diseaseSpreadController.predictSpread`| Performs disease spread simulation. |
+| `/spread-risk/history` | `GET` | `diseaseSpreadController.getHistory` | Fetches history logs for disease spread predictions. |
+| `/weather/refine` | `POST` | `weatherController.refineWeather` | Refines raw meteorological data into farming-specific alerts. |
+
+---
+
+## 5. Key Algorithms & Simulation Logics
+
+### A. Disease Spread Simulator (Cellular Automata Engine)
+`diseaseSpreadController.js` models dynamic outbreak patterns across a cellular grid.
+*   **Grid Initialization**: Spawns a 20x20 cell grid representing a crop field. Disease "hotspots" (seed nodes) are randomly seeded based on the initial crop leaf disease severity.
+*   **Weather-Adjusted R0 Model**: Baseline disease reproduction numbers (R0 values) are adjusted according to weather variables:
+    *   Humidity > 80% increases spread speed (+0.3 spread rate factor).
+    *   Wind speed > 15 km/h accelerates vector movement (+0.2 spread rate factor).
+    *   Optimal temperature ranges (25°C to 32°C) facilitate fungal growth (+0.15 factor).
+*   **Grid Propagation Loop**: Iterates through 14 simulation steps (representing days). Infected grid cells attempt to transmit disease to adjacent cells based on calculated probability thresholds:
+    $$\text{Spread Probability} = \frac{R0 \times \text{Spread Modifier}}{8.0}$$
+*   **Infection Metrics**: Calculates 7-day and 14-day cumulative infection percentages, alongside weather-influenced mutation risks, passing the final outputs to Gemini for narrative summaries.
+
+### B. Organic vs. Chemical Impact Simulator
+`simulatorController.js` calculates yield, costs, profit margins, and long-term soil depletion over time.
+*   **Chemical Projections**:
+    *   Yield increases (+20% base increase) based on the application intensity.
+    *   Costs scale based on chemical fertilizer pricing and intensive usage.
+    *   Soil Health degrades exponentially over time:
+        $$\text{Soil Health}_{\text{chem}} = 100 - (\text{Decay Rate} \times \text{Months})$$
+*   **Organic Projections**:
+    *   Yield runs slightly lower (-10% baseline yield).
+    *   Market premium (+40% crop sale price) offsets lower volume.
+    *   Soil Health improves linearly over time:
+        $$\text{Soil Health}_{\text{org}} = \min(100, 100 + \text{Months} \times 0.5)$$
+*   **LLM Summary**: The numeric variables are processed by the Groq Llama 3.3 model, returning three concise bullet points explaining the long-term trade-offs to the user.
+
+---
+
+## 6. Codebase Strengths & Areas for Improvement
+
+### Strengths
+1.  **AI Gateway Resilience**: The dual-engine design (`analysisEngine.js` and `geminiAdvisor.js`) has fallback structures in place. If Groq Vision fails, it returns a generic diagnosis; if Gemini's treatment generation fails, it handles it gracefully using pre-coded static fallbacks.
+2.  **Clean Separation of Concerns**: Routes are strictly controllers, controllers call isolated services, and services handle third-party client wrappers.
+3.  **Low Friction Weather Data**: Migrated from custom API keys to Open-Meteo, allowing geo-lookups and weather forecasts to operate without token configuration limits.
+4.  **Rich Visual Toolkit**: The client provides simulated widgets (Crop Calendar, Market Prices, Soil Health checks) that display actionable agricultural calculations.
+
+### Areas for Improvement
+1.  **Authentication Middleware Bypass**: The routes (`farmer.routes.js`) import controllers directly and map routes without applying auth middlewares, despite backend schema references to `user_id`. Implementing an authorization middleware checking JWT signatures on Supabase would secure data queries.
+2.  **No Image Optimization**: Leaf images are uploaded directly to Supabase storage in raw buffer format. Client-side compression or backend image resizing using a library like `sharp` would reduce bandwidth and image rendering time.
+3.  **Strict Type Checking for JSON responses**: The backend uses regex replacement to clean up markdown codeblocks (`/```json|```/g`). If the LLM generates slightly malformed JSON, `JSON.parse` will throw. Adding a robust JSON repair utility or using schema-defined structured output validation would improve reliability.

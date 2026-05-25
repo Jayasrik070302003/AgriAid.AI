@@ -21,24 +21,40 @@ async function groqChat(messages, { temperature = 0.4, maxTokens = 1024 } = {}) 
     return res.data.choices[0].message.content;
 }
 
-async function groqVision(imageUrl, cropType, location) {
+async function groqVision(imageUrl, location) {
     if (!process.env.GROQ_API_KEY) throw new Error('GROQ_API_KEY not set in .env');
 
-    const prompt = `You are an expert agricultural AI. Analyze this ${cropType} crop image from ${location}.
+    const prompt = `You are an expert agricultural AI specializing in universal plant intelligence.
+Analyze this image from location: ${location}.
 
-Return ONLY this JSON (no markdown, no extra text):
+Step 1: Check if the image contains a valid plant, crop, leaf, or agriculture-related content.
+- If it does NOT (e.g. it is a human, a selfie, a vehicle, a logo, a document, UI, text, or a random object), return exactly this JSON:
 {
-  "crop": "${cropType}",
-  "disease": "disease name or Healthy",
+  "isValidPlant": false
+}
+
+Step 2: If valid, identify the crop/plant species, scientific name, category, and check for diseases.
+Return exactly this JSON format:
+{
+  "isValidPlant": true,
+  "crop": "Detected crop/plant name (e.g., Tomato)",
+  "scientificName": "Scientific botanical name (e.g., Solanum lycopersicum)",
+  "category": "horticulture|field|medicinal|vegetable|fruit|flower|herb|tree",
+  "confidence": 95,
+  "disease": "Specific identified disease name (or 'Healthy')",
   "severity": "Low|Medium|High",
-  "confidence": 85,
   "status": "Healthy|Diseased|Warning"
-}`;
+}
+
+Do NOT write any markdown, no wrapping backticks (such as \`\`\`json), and no extra text. Return pure JSON.`;
 
     const res = await axios.post(
         'https://api.groq.com/openai/v1/chat/completions',
         {
             model: GROQ_VISION_MODEL,
+            max_tokens: 512,
+            temperature: 0.2,
+            response_format: { type: "json_object" },
             messages: [
                 {
                     role: 'user',
@@ -47,9 +63,7 @@ Return ONLY this JSON (no markdown, no extra text):
                         { type: 'image_url', image_url: { url: imageUrl } }
                     ]
                 }
-            ],
-            temperature: 0.3,
-            max_tokens: 512
+            ]
         },
         {
             headers: {
@@ -64,18 +78,58 @@ Return ONLY this JSON (no markdown, no extra text):
     return JSON.parse(raw);
 }
 
-async function groqSimulationSummary(crop, area, organic, chemical, language = 'English') {
-    const messages = [
-        { role: 'system', content: 'You are an expert agriculture consultant. Be concise and data-backed.' },
+async function groqCompareScenarios(base, scenarioA, scenarioB, language = 'English') {
+    const prompt = `You are an expert agriculture consultant.
+Compare two farming scenarios for a ${base.area} acre farm growing ${base.crop} on ${base.soilType} soil under ${base.weather} conditions.
+
+Scenario A: ${scenarioA.method} farming, ${scenarioA.irrigation} irrigation, ${scenarioA.fertilizer} fertilizer.
+Scenario B: ${scenarioB.method} farming, ${scenarioB.irrigation} irrigation, ${scenarioB.fertilizer} fertilizer.
+
+Evaluate the likely qualitative outcomes. Do NOT use fake exact numbers (e.g., no "2500 kg").
+Use ONLY "Low", "Moderate", "High", "Positive", "Neutral", or "Negative".
+
+Return exactly this JSON format:
+{
+  "scenarioA": {
+    "yieldEffect": "Low|Moderate|High",
+    "soilImpact": "Negative|Neutral|Positive",
+    "waterConsumption": "Low|Moderate|High",
+    "sustainability": "Low|Moderate|High",
+    "costEfficiency": "Low|Moderate|High",
+    "overallRisk": "Low|Moderate|High"
+  },
+  "scenarioB": {
+    "yieldEffect": "Low|Moderate|High",
+    "soilImpact": "Negative|Neutral|Positive",
+    "waterConsumption": "Low|Moderate|High",
+    "sustainability": "Low|Moderate|High",
+    "costEfficiency": "Low|Moderate|High",
+    "overallRisk": "Low|Moderate|High"
+  },
+  "explanation": "Provide a practical, research-based 3-sentence summary in ${language} comparing these scenarios."
+}
+Do NOT write any markdown, no wrapping backticks, and no extra text. Return pure JSON.`;
+
+    const res = await axios.post(
+        'https://api.groq.com/openai/v1/chat/completions',
         {
-            role: 'user',
-            content: `Compare farming methods for ${crop} on ${area} acres in ${language}:
-Chemical: Yield ${chemical.yield}kg, Profit Rs${chemical.profit}, Soil Health ${chemical.soilHealth}%.
-Organic: Yield ${organic.yield}kg, Profit Rs${organic.profit}, Soil Health ${organic.soilHealth}%.
-Give exactly 3 bullet points of specific advice. Mention profit difference of Rs${Math.abs(organic.profit - chemical.profit).toFixed(0)}.`
+            model: GROQ_MODEL,
+            max_tokens: 600,
+            temperature: 0.2,
+            response_format: { type: "json_object" },
+            messages: [{ role: 'user', content: prompt }]
+        },
+        {
+            headers: {
+                'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            timeout: 30000
         }
-    ];
-    return groqChat(messages, { temperature: 0.6, maxTokens: 512 });
+    );
+
+    const raw = res.data.choices[0].message.content.replace(/```json|```/g, '').trim();
+    return JSON.parse(raw);
 }
 
 async function groqChatResponse(userMessage) {
@@ -91,4 +145,4 @@ For non-agriculture questions, politely redirect.`
     return groqChat(messages, { temperature: 0.7, maxTokens: 1024 });
 }
 
-module.exports = { groqChat, groqVision, groqSimulationSummary, groqChatResponse };
+module.exports = { groqChat, groqVision, groqCompareScenarios, groqChatResponse };

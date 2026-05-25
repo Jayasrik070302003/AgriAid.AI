@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useContext } from 'react';
 
 const LanguageContext = createContext();
 
@@ -101,6 +101,56 @@ export const translations = {
         timeline_economic_insight: "Economic Insight",
         timeline_yield_confidence: "Yield Confidence",
         timeline_water_intensity: "Water Intensity",
+
+        // Crop Calendar
+        cal_badge: "AI Precision Scheduler",
+        cal_title: "Crop Calendar",
+        cal_subtitle: "AI-powered lifecycle planner with real-time weather, soil & market intelligence.",
+        cal_search_placeholder: "Search any crop... (e.g. Rice, Tomato, Ri...)",
+        cal_search_label: "Search Crop",
+        cal_date_label: "Sowing Date",
+        cal_location_label: "Location",
+        cal_location_detecting: "Detecting location...",
+        cal_location_edit: "Edit location",
+        cal_location_hide: "Hide",
+        cal_state_placeholder: "State (e.g. Tamil Nadu)",
+        cal_district_placeholder: "District (e.g. Madurai)",
+        cal_generate_btn: "Generate AI Calendar",
+        cal_generating: "AI is building your calendar...",
+        cal_empty_title: "Ready to Plan Your Season",
+        cal_empty_desc: "Search a crop and set your sowing date to get a complete AI-powered farming calendar.",
+        cal_step1: "Search Crop",
+        cal_step1_desc: "Type any crop name",
+        cal_step2: "Set Date",
+        cal_step2_desc: "Pick sowing date",
+        cal_step3: "Get Calendar",
+        cal_step3_desc: "AI builds your plan",
+        cal_yield_conf: "Yield Confidence",
+        cal_water: "Water Intensity",
+        cal_season: "Season",
+        cal_duration: "Duration",
+        cal_days: "days",
+        cal_harvest_window: "Harvest Window",
+        cal_early: "Early",
+        cal_optimal: "Optimal",
+        cal_late: "Late",
+        cal_soil_req: "Soil Requirements",
+        cal_market: "Market Outlook",
+        cal_warnings: "Critical Warnings",
+        cal_ai_summary: "AI Expert Summary",
+        cal_active_phase: "Active Phase",
+        cal_weather_adj: "Weather Advisory",
+        cal_irrigation: "Irrigation",
+        cal_fertilizer: "Fertilizer",
+        cal_pest_risk: "Pest / Disease Risk",
+        cal_economic: "Economic Insight",
+        cal_risk_high: "High Risk",
+        cal_risk_medium: "Medium Risk",
+        cal_risk_low: "Low Risk",
+        cal_no_results: "No crops found. Try a different name.",
+        cal_ai_searching: "AI searching...",
+        cal_location_locked: "Location locked",
+        cal_location_syncing: "Syncing GPS...",
 
         // Help & Support
         help_subtitle: "We are here to help you with any questions.",
@@ -660,6 +710,56 @@ export const translations = {
         timeline_yield_confidence: "उपज का विश्वास",
         timeline_water_intensity: "पानी की तीव्रता",
 
+        // Crop Calendar
+        cal_badge: "AI सटीक शेड्यूलर",
+        cal_title: "फसल कैलेंडर",
+        cal_subtitle: "रियल-टाइम मौसम, मिट्टी और बाजार बुद्धिमत्ता के साथ AI-संचालित जीवनचक्र योजनाकार।",
+        cal_search_placeholder: "कोई भी फसल खोजें... (जैसे चावल, टमाटर, च...)",
+        cal_search_label: "फसल खोजें",
+        cal_date_label: "बुवाई की तारीख",
+        cal_location_label: "स्थान",
+        cal_location_detecting: "स्थान का पता लगाया जा रहा है...",
+        cal_location_edit: "स्थान संपादित करें",
+        cal_location_hide: "छुपाएं",
+        cal_state_placeholder: "राज्य (जैसे तमिलनाडु)",
+        cal_district_placeholder: "जिला (जैसे मदुरै)",
+        cal_generate_btn: "AI कैलेंडर बनाएं",
+        cal_generating: "AI आपका कैलेंडर बना रहा है...",
+        cal_empty_title: "अपना सीजन प्लान करने के लिए तैयार",
+        cal_empty_desc: "पूर्ण AI-संचालित खेती कैलेंडर पाने के लिए फसल खोजें और बुवाई की तारीख सेट करें।",
+        cal_step1: "फसल खोजें",
+        cal_step1_desc: "कोई भी फसल का नाम टाइप करें",
+        cal_step2: "तारीख सेट करें",
+        cal_step2_desc: "बुवाई की तारीख चुनें",
+        cal_step3: "कैलेंडर पाएं",
+        cal_step3_desc: "AI आपकी योजना बनाता है",
+        cal_yield_conf: "उपज का विश्वास",
+        cal_water: "पानी की तीव्रता",
+        cal_season: "मौसम",
+        cal_duration: "अवधि",
+        cal_days: "दिन",
+        cal_harvest_window: "कटाई की खिड़की",
+        cal_early: "जल्दी",
+        cal_optimal: "इष्टतम",
+        cal_late: "देर से",
+        cal_soil_req: "मिट्टी की आवश्यकताएं",
+        cal_market: "बाजार दृष्टिकोण",
+        cal_warnings: "महत्वपूर्ण चेतावनियां",
+        cal_ai_summary: "AI विशेषज्ञ सारांश",
+        cal_active_phase: "सक्रिय चरण",
+        cal_weather_adj: "मौसम सलाह",
+        cal_irrigation: "सिंचाई",
+        cal_fertilizer: "उर्वरक",
+        cal_pest_risk: "कीट / रोग जोखिम",
+        cal_economic: "आर्थिक अंतर्दृष्टि",
+        cal_risk_high: "उच्च जोखिम",
+        cal_risk_medium: "मध्यम जोखिम",
+        cal_risk_low: "कम जोखिम",
+        cal_no_results: "कोई फसल नहीं मिली। कोई अलग नाम आज़माएं।",
+        cal_ai_searching: "AI खोज रहा है...",
+        cal_location_locked: "स्थान लॉक है",
+        cal_location_syncing: "GPS सिंक हो रहा है...",
+
         // Help & Support
         help_subtitle: "हम किसी भी प्रश्न में आपकी सहायता के लिए यहां हैं।",
         help_call: "समर्थन को कॉल करें",
@@ -1017,6 +1117,56 @@ export const translations = {
         timeline_yield_confidence: "மகசூல் நம்பிக்கை",
         timeline_water_intensity: "நீர் செறிவை",
 
+        // Crop Calendar
+        cal_badge: "AI துல்லிய திட்டமிடுபவர்",
+        cal_title: "பயிர் காலண்டர்",
+        cal_subtitle: "நேரடி வானிலை, மண் மற்றும் சந்தை நுண்ணறிவுடன் AI-இயக்கப்படும் வாழ்க்கைச் சுழற்சி திட்டமிடுபவர்.",
+        cal_search_placeholder: "எந்த பயிரையும் தேடுங்கள்... (எ.கா. நெல், தக்காளி, நெ...)",
+        cal_search_label: "பயிர் தேடுக",
+        cal_date_label: "விதைப்பு தேதி",
+        cal_location_label: "இடம்",
+        cal_location_detecting: "இடத்தை கண்டறிகிறது...",
+        cal_location_edit: "இடத்தை திருத்து",
+        cal_location_hide: "மறை",
+        cal_state_placeholder: "மாநிலம் (எ.கா. தமிழ்நாடு)",
+        cal_district_placeholder: "மாவட்டம் (எ.கா. மதுரை)",
+        cal_generate_btn: "AI காலண்டர் உருவாக்கு",
+        cal_generating: "AI உங்கள் காலண்டரை உருவாக்குகிறது...",
+        cal_empty_title: "உங்கள் பருவத்தை திட்டமிட தயார்",
+        cal_empty_desc: "முழுமையான AI-இயக்கப்படும் விவசாய காலண்டரைப் பெற பயிரை தேடி விதைப்பு தேதியை அமைக்கவும்.",
+        cal_step1: "பயிர் தேடுக",
+        cal_step1_desc: "எந்த பயிர் பெயரையும் தட்டச்சு செய்யவும்",
+        cal_step2: "தேதி அமை",
+        cal_step2_desc: "விதைப்பு தேதியை தேர்ந்தெடுக்கவும்",
+        cal_step3: "காலண்டர் பெறுக",
+        cal_step3_desc: "AI உங்கள் திட்டத்தை உருவாக்கும்",
+        cal_yield_conf: "மகசூல் நம்பிக்கை",
+        cal_water: "நீர் செறிவு",
+        cal_season: "பருவம்",
+        cal_duration: "காலம்",
+        cal_days: "நாட்கள்",
+        cal_harvest_window: "அறுவடை சாளரம்",
+        cal_early: "முன்னதாக",
+        cal_optimal: "சிறந்த நேரம்",
+        cal_late: "தாமதமாக",
+        cal_soil_req: "மண் தேவைகள்",
+        cal_market: "சந்தை கண்ணோட்டம்",
+        cal_warnings: "முக்கிய எச்சரிக்கைகள்",
+        cal_ai_summary: "AI நிபுணர் சுருக்கம்",
+        cal_active_phase: "செயலில் உள்ள நிலை",
+        cal_weather_adj: "வானிலை ஆலோசனை",
+        cal_irrigation: "நீர்ப்பாசனம்",
+        cal_fertilizer: "உரம்",
+        cal_pest_risk: "பூச்சி / நோய் அபாயம்",
+        cal_economic: "பொருளாதார நுண்ணறிவு",
+        cal_risk_high: "அதிக அபாயம்",
+        cal_risk_medium: "நடுத்தர அபாயம்",
+        cal_risk_low: "குறைந்த அபாயம்",
+        cal_no_results: "பயிர் எதுவும் கிடைக்கவில்லை. வேறு பெயரை முயற்சிக்கவும்.",
+        cal_ai_searching: "AI தேடுகிறது...",
+        cal_location_locked: "இடம் பூட்டப்பட்டது",
+        cal_location_syncing: "GPS ஒத்திசைக்கிறது...",
+
         // Help & Support
         help_subtitle: "எந்தவொரு கேள்விக்கும் உங்களுக்கு உதவ நாங்கள் இருக்கிறோம்.",
         help_call: "ஆதரவை அழைக்கவும்",
@@ -1293,14 +1443,21 @@ export const translations = {
 };
 
 export const LanguageProvider = ({ children }) => {
-    const [language, setLanguage] = useState('EN');
+    const [language, setLanguage] = React.useState(() => {
+        return localStorage.getItem('agriaid_lang') || 'EN';
+    });
+
+    const changeLanguage = (lang) => {
+        setLanguage(lang);
+        localStorage.setItem('agriaid_lang', lang);
+    };
 
     const t = (key) => {
-        return translations[language][key] || translations['EN'][key] || key;
+        return translations[language]?.[key] || translations['EN'][key] || key;
     };
 
     return (
-        <LanguageContext.Provider value={{ language, setLanguage, t }}>
+        <LanguageContext.Provider value={{ language, setLanguage: changeLanguage, t }}>
             {children}
         </LanguageContext.Provider>
     );

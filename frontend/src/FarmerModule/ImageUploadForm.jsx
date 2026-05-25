@@ -1,233 +1,598 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { UploadCloud, CheckCircle2, AlertCircle, Loader2, Sprout, MapPin, RefreshCw, Camera, X, CloudSun, IndianRupee, ThermometerSun, Mic, Beaker, ChevronDown, ChevronUp, Volume2, VolumeX, Check, Clock, Calendar, ScanLine, Tractor, ArrowRight, Activity } from 'lucide-react';
+import { 
+    UploadCloud, CheckCircle2, AlertCircle, Loader2, Sprout, MapPin, RefreshCw, 
+    Camera, X, CloudSun, ThermometerSun, Mic, Beaker, ChevronDown, 
+    ChevronUp, Volume2, VolumeX, Check, ScanLine, Tractor, ArrowRight, Activity, 
+    Lock, Unlock, ShieldCheck, Leaf, Compass, CheckCircle, Search, HelpCircle, AlertTriangle, Sparkles
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
+import apiClient from '../services/apiClient';
 import clsx from 'clsx';
-import { Select, MenuItem, FormControl, InputLabel, TextField } from '@mui/material';
 import { useLanguage } from '../Context/LanguageContext';
 import { useTheme } from '../Context/ThemeContext';
 import { toast } from 'react-hot-toast';
-import Loader from '../SharedComponents/Loader';
 import { useGlobalState } from '../Context/GlobalStateContext';
-import { API_BASE_URL } from '../config';
 
-const CROP_DATA = {
-    horticulture: ['Banana', 'Cashew', 'Tomato', 'Chilli', 'Brinjal', 'Spinach', 'Coriander', 'Mint', 'Capsicum'],
-    field: ['Rice', 'Wheat', 'Cotton', 'Sugarcane', 'Maize', 'Groundnut']
-};
-// const CROPS = ['Tomato', 'Potato', 'Rice', 'Corn', 'Wheat', 'Grape', 'Cotton', 'Sugarcane', 'Soybean'];
-const STATES = ['Maharashtra', 'Punjab', 'Karnataka', 'Tamil Nadu', 'Uttar Pradesh', 'Kerala'];
-
-const STATE_DISTRICTS = {
-    'Maharashtra': [
-        'Ahmednagar', 'Akola', 'Amravati', 'Aurangabad', 'Beed', 'Bhandara', 'Buldhana', 'Chandrapur', 'Dhule', 'Gadchiroli',
-        'Gondia', 'Hingoli', 'Jalgaon', 'Jalna', 'Kolhapur', 'Latur', 'Mumbai City', 'Mumbai Suburban', 'Nagpur', 'Nanded',
-        'Nandurbar', 'Nashik', 'Osmanabad', 'Palghar', 'Parbhani', 'Pune', 'Raigad', 'Ratnagiri', 'Sangli', 'Satara',
-        'Sindhudurg', 'Solapur', 'Thane', 'Wardha', 'Washim', 'Yavatmal'
-    ],
-    'Punjab': [
-        'Amritsar', 'Barnala', 'Bathinda', 'Faridkot', 'Fatehgarh Sahib', 'Fazilka', 'Ferozepur', 'Gurdaspur', 'Hoshiarpur',
-        'Jalandhar', 'Kapurthala', 'Ludhiana', 'Mansa', 'Moga', 'Mohali (SAS Nagar)', 'Muktsar', 'Nawanshahr (SBS Nagar)',
-        'Pathankot', 'Patiala', 'Ropar (Rupnagar)', 'Sangrur', 'Tarn Taran'
-    ],
-    'Karnataka': [
-        'Bagalkot', 'Bangalore Rural', 'Bangalore Urban', 'Belgaum', 'Bellary', 'Bidar', 'Chamarajanagar', 'Chikkaballapur',
-        'Chikkamagaluru', 'Chitradurga', 'Dakshina Kannada', 'Davangere', 'Dharwad', 'Gadag', 'Gulbarga', 'Hassan', 'Haveri',
-        'Kodagu', 'Kolar', 'Koppal', 'Mandya', 'Mysore', 'Raichur', 'Ramanagara', 'Shimoga', 'Tumkur', 'Udupi', 'Uttara Kannada',
-        'Vijayapura', 'Yadgir'
-    ],
-    'Tamil Nadu': [
-        'Ariyalur', 'Chengalpattu', 'Chennai', 'Coimbatore', 'Cuddalore', 'Dharmapuri', 'Dindigul', 'Erode', 'Kallakurichi',
-        'Kancheepuram', 'Kanniyakumari', 'Karur', 'Krishnagiri', 'Madurai', 'Mayiladuthurai', 'Nagapattinam', 'Namakkal',
-        'Nilgiris', 'Perambalur', 'Pudukkottai', 'Ramanathapuram', 'Ranipet', 'Salem', 'Sivagangai', 'Tenkasi', 'Thanjavur',
-        'Theni', 'Thiruvallur', 'Thiruvarur', 'Thoothukudi', 'Tiruchirappalli', 'Tirunelveli', 'Tirupathur', 'Tiruppur',
-        'Tiruvannamalai', 'Vellore', 'Viluppuram', 'Virudhunagar'
-    ],
-    'Uttar Pradesh': [
-        'Agra', 'Aligarh', 'Ambedkar Nagar', 'Amethi', 'Amroha', 'Auraiya', 'Ayodhya', 'Azamgarh', 'Baghpat', 'Bahraich',
-        'Ballia', 'Balrampur', 'Banda', 'Barabanki', 'Bareilly', 'Basti', 'Bhadohi', 'Bijnor', 'Budaun', 'Bulandshahr',
-        'Chandauli', 'Chitrakoot', 'Deoria', 'Etah', 'Etawah', 'Farrukhabad', 'Fatehpur', 'Firozabad', 'Gautam Buddha Nagar (Noida)',
-        'Ghaziabad', 'Ghazipur', 'Gonda', 'Gorakhpur', 'Hamirpur', 'Hapur', 'Hardoi', 'Hathras', 'Jalaun', 'Jaunpur', 'Jhansi',
-        'Kannauj', 'Kanpur Dehat', 'Kanpur Nagar', 'Kasganj', 'Kaushambi', 'Kheri', 'Kushinagar', 'Lalitpur', 'Lucknow',
-        'Maharajganj', 'Mahoba', 'Mainpuri', 'Mathura', 'Mau', 'Meerut', 'Mirzapur', 'Moradabad', 'Muzaffarnagar', 'Pilibhit',
-        'Pratapgarh', 'Prayagraj (Allahabad)', 'Raebareli', 'Rampur', 'Saharanpur', 'Sambhal', 'Sant Kabir Nagar', 'Shahjahanpur',
-        'Shamli', 'Shravasti', 'Siddharthnagar', 'Sitapur', 'Sonbhadra', 'Sultanpur', 'Unnao', 'Varanasi'
-    ],
-    'Kerala': [
-        'Alappuzha', 'Ernakulam', 'Idukki', 'Kannur', 'Kasaragod', 'Kollam', 'Kottayam', 'Kozhikode', 'Malappuram', 'Palakkad',
-        'Pathanamthitta', 'Thiruvananthapuram', 'Thrissur', 'Wayanad'
-    ]
-};
-
-const ScanningOverlay = () => (
-    <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden rounded-3xl">
-        {/* Fututistic Laser Scan */}
-        <motion.div
-            className="w-full h-[3px] bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_20px_rgba(52,211,153,0.8)] z-30"
-            animate={{ top: ['0%', '100%', '0%'] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-            style={{ position: 'absolute' }}
-        />
-
-        {/* Tech Grain & Overlay */}
-        <div className="absolute inset-0 bg-emerald-500/5 backdrop-blur-[1px] mix-blend-overlay" />
-
-        {/* HUD Corners - Sharp Clinic Style */}
-        <div className="absolute top-6 left-6 border-t-2 border-l-2 border-emerald-500/50 w-6 h-6 rounded-tl-sm shadow-[0_0_10px_rgba(16,185,129,0.3)]" />
-        <div className="absolute top-6 right-6 border-t-2 border-r-2 border-emerald-500/50 w-6 h-6 rounded-tr-sm shadow-[0_0_10px_rgba(16,185,129,0.3)]" />
-        <div className="absolute bottom-6 left-6 border-b-2 border-l-2 border-emerald-500/50 w-6 h-6 rounded-bl-sm shadow-[0_0_10px_rgba(16,185,129,0.3)]" />
-        <div className="absolute bottom-6 right-6 border-b-2 border-r-2 border-emerald-500/50 w-6 h-6 rounded-br-sm shadow-[0_0_10px_rgba(16,185,129,0.3)]" />
-
-        {/* Center Diagnostic Badge */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-            <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="flex flex-col items-center gap-4"
-            >
-                <div className="relative">
-                    <div className="w-16 h-16 rounded-full border-2 border-emerald-500/20 flex items-center justify-center animate-[spin_4s_linear_infinite]">
-                        <div className="w-12 h-12 rounded-full border-2 border-dashed border-emerald-500/40" />
-                    </div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
-                    </div>
-                </div>
-                <div className="bg-emerald-500/90 backdrop-blur-md text-white text-[9px] font-bold px-4 py-2 rounded-xl shadow-2xl border border-white/20 tracking-wider uppercase flex items-center gap-2">
-                    <ScanLine className="w-3 h-3 animate-pulse" />
-                    Analysing Specimen...
-                </div>
-            </motion.div>
-        </div>
-
-        {/* Binary/Data Feed Mockup Overlay */}
-        <div className="absolute top-10 left-10 opacity-20 hidden md:block">
-            <div className="flex flex-col gap-1">
-                {[1, 2, 3].map(i => <div key={i} className="w-12 h-0.5 bg-emerald-500 rounded-full" />)}
-            </div>
-        </div>
-    </div>
-);
+const PIPELINE_STAGES = [
+    { id: 1, text: "Acquiring precision GPS boundaries..." },
+    { id: 2, text: "Running Stage 1 Botanical Validation..." },
+    { id: 3, text: "Identifying plant species & taxonomy..." },
+    { id: 4, text: "Connecting Groq vision neural engines..." },
+    { id: 5, text: "Invoking Gemini treatment matrices..." }
+];
 
 const ImageUploadForm = () => {
     const { t } = useLanguage();
     const { isDarkMode } = useTheme();
+    const { refreshGlobalData } = useGlobalState();
+
+    // Responsive dimensions
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+    useEffect(() => {
+        const handleResize = () => setWindowWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+    const isLargeScreen = windowWidth >= 1024;
+
+    // Component core states
     const [selectedImage, setSelectedImage] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [pipelineStage, setPipelineStage] = useState(0);
     const [result, setResult] = useState(null);
     const [error, setError] = useState(null);
 
-    // Menu Props for custom styling of dropdowns
-    const menuProps = {
-        PaperProps: {
-            style: {
-                maxHeight: 300,
-            },
-            sx: {
-                borderRadius: 3,
-                bgcolor: isDarkMode ? '#1e293b' : 'background.paper',
-                color: isDarkMode ? '#f1f5f9' : 'text.primary',
-                border: isDarkMode ? '1px solid #334155' : 'none',
-                '& .MuiMenuItem-root': {
-                    '&:hover': {
-                        bgcolor: isDarkMode ? '#334155' : 'rgba(0, 0, 0, 0.04)',
-                    },
-                    '&.Mui-selected': {
-                        bgcolor: isDarkMode ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.08)',
-                        '&:hover': {
-                            bgcolor: isDarkMode ? 'rgba(16, 185, 129, 0.3)' : 'rgba(16, 185, 129, 0.12)',
-                        }
-                    }
-                },
-                // Hide Scrollbar
-                '&::-webkit-scrollbar': { display: 'none' },
-                scrollbarWidth: 'none',
-                '-ms-overflow-style': 'none',
+    // AI Crop Search States (Fuzzy Input)
+    const [searchQuery, setSearchQuery] = useState('');
+    const [cropType, setCropType] = useState('');
+    const [scientificName, setScientificName] = useState('');
+    const [farmingType, setFarmingType] = useState('field');
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [suggestions, setSuggestions] = useState([]);
+    const [isSuggesting, setIsSuggesting] = useState(false);
+    const [isWaitingToSearch, setIsWaitingToSearch] = useState(false);
+    const searchTimeoutRef = useRef(null);
+    const pendingQueryRef = useRef('');
+    const isSelectingRef = useRef(false); // prevents blur from firing when clicking a suggestion
+
+    // Geolocation & Precision Location States
+    const [isLocating, setIsLocating] = useState(false);
+    const [isLocationLocked, setIsLocationLocked] = useState(true);
+    const [isEditingLocation, setIsEditingLocation] = useState(false);
+    const [isFetchingSoil, setIsFetchingSoil] = useState(false);
+    
+    const [country, setCountry] = useState('India');
+    const [state, setState] = useState('Tamil Nadu');
+    const [district, setDistrict] = useState('Viluppuram');
+    const [taluk, setTaluk] = useState('Tindivanam');
+    const [village, setVillage] = useState('Avarapakkam');
+    const [latitude, setLatitude] = useState('12.223412');
+    const [longitude, setLongitude] = useState('79.645524');
+    const [pincode, setPincode] = useState('604001');
+    const [elevation, setElevation] = useState('42');
+    const [locationConfidenceLow, setLocationConfidenceLow] = useState(false);
+
+    // Soil Profile Estimation State (AI-Driven)
+    const [estimatedSoil, setEstimatedSoil] = useState({
+        soilType: "Red Sandy Loam / Clay Loam",
+        rainfallZone: "North-Eastern Agro-Climatic Zone (Semi-Arid, 950mm average)",
+        landClassification: "Dryland & Canal-Irrigated Deltaic Plain",
+        organicMatter: "0.48% (Low to Medium)",
+        phLevel: "6.2 - 7.5 (Slightly Acidic to Neutral)",
+        suitability: "Excellent for Paddy (Rice), Chilli, Groundnut, Sugarcane, and Cashew",
+        moistureRange: "18% - 24% (Moderate)"
+    });
+
+    // Soil Nutrients (N-P-K) sliders
+    const [soilData, setSoilData] = useState({ n: 140, p: 45, k: 55 });
+
+    // AI Confidence Logic Confirmation Blocks
+    const [pendingAnalysis, setPendingAnalysis] = useState(null);
+    const [confidenceMode, setConfidenceMode] = useState('none'); // 'none' | 'confirm' | 'low_confidence'
+
+    // UI Interactive States
+    const [isListening, setIsListening] = useState(false);
+    const [isCameraOpen, setIsCameraOpen] = useState(false);
+    const [isSpeaking, setIsSpeaking] = useState(false);
+
+    const videoRef = useRef(null);
+    const canvasRef = useRef(null);
+    const fileInputRef = useRef(null);
+    const resultRef = useRef(null);
+
+    // Dynamic Spacing Dimensions
+    const sidebarStyle = isLargeScreen ? {
+        width: 'calc(23rem + 1.5vw)',
+        minHeight: 'calc(100vh - 40px)',
+        overflowY: 'auto',
+    } : {
+        width: '100%'
+    };
+
+    const mainContentStyle = isLargeScreen ? {
+        width: 'calc(100% - (23rem + 1.5vw))',
+        minHeight: 'calc(100vh - 40px)',
+    } : {
+        width: '100%'
+    };
+
+    // Live weather state
+    const [liveWeather, setLiveWeather] = useState(null);
+
+    const fetchLiveWeather = async (lat, lon) => {
+        try {
+            const res = await fetch(
+                `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&timezone=auto`
+            );
+            const data = await res.json();
+            if (data?.current) {
+                const WMO = { 0:'Clear Sky',1:'Mainly Clear',2:'Partly Cloudy',3:'Overcast',45:'Foggy',51:'Light Drizzle',61:'Light Rain',63:'Rain',65:'Heavy Rain',80:'Showers',95:'Thunderstorm' };
+                setLiveWeather({
+                    temp: Math.round(data.current.temperature_2m),
+                    humidity: data.current.relative_humidity_2m,
+                    wind: Math.round(data.current.wind_speed_10m),
+                    condition: WMO[data.current.weather_code] || 'Clear'
+                });
             }
+        } catch (e) {
+            console.warn('Live weather fetch failed:', e);
         }
     };
 
-    // Camera State
-    const [isCameraOpen, setIsCameraOpen] = useState(false);
-    const videoRef = useRef(null);
-    const canvasRef = useRef(null);
-
-    // Form Inputs
-    const [cropType, setCropType] = useState('');
-    const [farmingType, setFarmingType] = useState('field'); // 'horticulture' | 'field'
-    const [district, setDistrict] = useState('');
-    const [state, setState] = useState('');
-    const [soilData, setSoilData] = useState({ n: 140, p: 40, k: 50 });
-    const [showSoilAdvanced, setShowSoilAdvanced] = useState(false);
-    const [isListening, setIsListening] = useState(false);
-    const [isLocating, setIsLocating] = useState(false);
-
-    // Reset crop when farming type changes
+    // Auto-detect geolocation immediately when page loads
     useEffect(() => {
-        setCropType('');
-    }, [farmingType]);
+        triggerGeolocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
-    // Scroll to results on mobile when analysis is complete
-    const resultRef = useRef(null);
+    // Scroll to analysis results on update
     useEffect(() => {
-        if (result && resultRef.current && window.innerWidth < 768) {
-            // Small delay to ensure rendering
+        if (result && resultRef.current) {
             setTimeout(() => {
                 resultRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }, 300);
         }
     }, [result]);
 
-    const fileInputRef = useRef(null);
-
-    const handleImageChange = (e) => {
-        const file = e.target.files[0];
-        validateAndPreview(file);
+    // Fetch AI Soil Profile based on location context
+    const fetchAISoilProfile = async (locData) => {
+        setIsFetchingSoil(true);
+        try {
+            const response = await apiClient.post(`/api/farmer/soil-profile`, locData);
+            if (response.data && response.data.success && response.data.data) {
+                setEstimatedSoil(response.data.data);
+            }
+        } catch (e) {
+            console.warn("Failed to fetch AI soil profile:", e);
+        } finally {
+            setIsFetchingSoil(false);
+        }
     };
 
-    const validateAndPreview = (file) => {
-        if (!file) return;
+    const forwardGeocodeAddress = async (updatedFields = {}) => {
+        const activeState = updatedFields.state !== undefined ? updatedFields.state : state;
+        const activeDistrict = updatedFields.district !== undefined ? updatedFields.district : district;
+        const activeTaluk = updatedFields.taluk !== undefined ? updatedFields.taluk : taluk;
+        const activeVillage = updatedFields.village !== undefined ? updatedFields.village : village;
+        const activePincode = updatedFields.pincode !== undefined ? updatedFields.pincode : pincode;
 
-        if (!file.type.match('image.*')) {
-            setError('Please select a valid image file (JPG, PNG)');
+        if (!activeState && !activeDistrict) return;
+
+        const searchQueryString = `${activeVillage ? activeVillage + ', ' : ''}${activeTaluk ? activeTaluk + ', ' : ''}${activeDistrict}, ${activeState}, India`;
+        setIsLocating(true);
+        try {
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQueryString)}&limit=1`;
+            const res = await fetch(url, {
+                headers: {
+                    'Accept': 'application/json',
+                    'User-Agent': 'AgriAid.AI-Precision-Agriculture'
+                }
+            });
+            const data = await res.json();
+            if (data && data.length > 0) {
+                const matched = data[0];
+                const newLat = parseFloat(matched.lat).toFixed(6);
+                const newLon = parseFloat(matched.lon).toFixed(6);
+                setLatitude(newLat);
+                setLongitude(newLon);
+
+                // Fetch new elevation
+                let newElevation = elevation;
+                try {
+                    const elRes = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${newLat}&longitude=${newLon}`);
+                    const elData = await elRes.json();
+                    if (elData && elData.elevation && elData.elevation[0] !== undefined) {
+                        newElevation = Math.round(elData.elevation[0]).toString();
+                        setElevation(newElevation);
+                    }
+                } catch (e) {
+                    console.warn("Elevation fetch failed:", e);
+                }
+
+                // Fetch new soil profile
+                fetchAISoilProfile({
+                    state: activeState,
+                    district: activeDistrict,
+                    country,
+                    taluk: activeTaluk,
+                    village: activeVillage,
+                    latitude: newLat,
+                    longitude: newLon,
+                    pincode: activePincode,
+                    elevation: newElevation
+                });
+
+                toast.success(`📍 Map coordinates aligned to ${activeVillage || activeDistrict}!`);
+            } else {
+                fetchAISoilProfile({
+                    state: activeState,
+                    district: activeDistrict,
+                    country,
+                    taluk: activeTaluk,
+                    village: activeVillage,
+                    latitude,
+                    longitude,
+                    pincode: activePincode,
+                    elevation
+                });
+            }
+        } catch (e) {
+            console.warn("Forward geocoding failed:", e);
+            fetchAISoilProfile({
+                state: activeState,
+                district: activeDistrict,
+                country,
+                taluk: activeTaluk,
+                village: activeVillage,
+                latitude,
+                longitude,
+                pincode: activePincode,
+                elevation
+            });
+        } finally {
+            setIsLocating(false);
+        }
+    };
+
+    // Alias for onBlur on lat/lon fields — re-fetches soil profile
+    const triggerSoilEstimate = () => {
+        fetchAISoilProfile({ state, district, country, taluk, village, latitude, longitude, pincode, elevation });
+    };
+
+    // Handle Precision Geolocation with elevation & full reverse geocoding
+    const triggerGeolocation = () => {
+        setIsLocating(true);
+        setLocationConfidenceLow(false);
+
+        if (!navigator.geolocation) {
+            toast.error("Browser does not support geolocation. Falling back to regional values.");
+            fallbackIPLocation();
             return;
         }
 
-        if (file.size > 5 * 1024 * 1024) {
-            setError('File size should be less than 5MB');
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude: lat, longitude: lon } = position.coords;
+                setLatitude(lat.toFixed(6));
+                setLongitude(lon.toFixed(6));
+                fetchLiveWeather(lat, lon);
+
+                // 1. Fetch Elevation from Open-Meteo API
+                try {
+                    const elRes = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`);
+                    const elData = await elRes.json();
+                    if (elData && elData.elevation && elData.elevation[0] !== undefined) {
+                        setElevation(Math.round(elData.elevation[0]).toString());
+                    }
+                } catch (e) {
+                    console.warn("Elevation fetch failed:", e);
+                }
+
+                // 2. Fetch reverse geocoding details from OpenStreetMap Nominatim
+                try {
+                    const osmUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
+                    const res = await fetch(osmUrl, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'User-Agent': 'AgriAid.AI-Precision-Agriculture'
+                        }
+                    });
+                    const data = await res.json();
+                    
+                    if (data && data.address) {
+                        const addr = data.address;
+                        const detectedCountry = addr.country || "India";
+                        const detectedState = addr.state || "";
+                        const detectedDistrict = addr.state_district || addr.district || addr.county || "";
+                        const detectedTaluk = addr.county || addr.subdistrict || "";
+                        const detectedVillage = addr.village || addr.town || addr.suburb || addr.city || addr.neighbourhood || addr.hamlet || "";
+                        const detectedPostcode = addr.postcode || "";
+
+                        setCountry(detectedCountry);
+                        setState(detectedState);
+                        setDistrict(detectedDistrict.replace(" District", "").replace(" Division", ""));
+                        setTaluk(detectedTaluk.replace(" Taluk", "").replace(" Sub-district", "").replace(" Tehsil", ""));
+                        setVillage(detectedVillage || addr.road || "Farming Locality");
+                        setPincode(detectedPostcode);
+                        setIsLocationLocked(true);
+                        
+                        if (!detectedState || !detectedDistrict) {
+                            setLocationConfidenceLow(true);
+                        }
+
+                        // Retrieve AI-driven soil profile for coordinates
+                        fetchAISoilProfile({
+                            state: detectedState,
+                            district: detectedDistrict.replace(" District", ""),
+                            country: detectedCountry,
+                            taluk: detectedTaluk.replace(" Taluk", ""),
+                            village: detectedVillage || "Farming Locality",
+                            latitude: lat.toString(),
+                            longitude: lon.toString(),
+                            pincode: detectedPostcode,
+                            elevation: elevation
+                        });
+
+                        toast.success(`📍 Located: ${detectedVillage || 'Micro-region'}, ${detectedDistrict}`);
+                        return;
+                    }
+                    throw new Error("OSM address empty");
+                } catch (err) {
+                    console.warn("OSM Nominatim failed, trying fallback BigDataCloud:", err);
+                    
+                    // 3. Fallback: BigDataCloud Geocoding
+                    try {
+                        const bdcUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`;
+                        const res = await fetch(bdcUrl);
+                        const data = await res.json();
+                        
+                        if (data) {
+                            const detectedCountry = data.countryName || "India";
+                            const detectedState = data.principalSubdivision || "";
+                            
+                            let foundDistrict = "";
+                            let foundTaluk = "";
+                            if (data.localityInfo && data.localityInfo.administrative) {
+                                const admins = data.localityInfo.administrative;
+                                const districtObj = admins.find(a => a.adminLevel === 6 || a.name.toLowerCase().includes('district') || a.description.toLowerCase().includes('district'));
+                                const talukObj = admins.find(a => a.adminLevel === 7 || a.name.toLowerCase().includes('taluk') || a.name.toLowerCase().includes('tehsil'));
+                                if (districtObj) foundDistrict = districtObj.name.replace(" District", "");
+                                if (talukObj) foundTaluk = talukObj.name.replace(" Taluk", "").replace(" Tehsil", "");
+                            }
+
+                            setCountry(detectedCountry);
+                            setState(detectedState);
+                            setDistrict(foundDistrict || data.locality || "");
+                            setTaluk(foundTaluk || "");
+                            setVillage(data.locality || "Farming Village");
+                            setPincode(data.postcode || "");
+                            setIsLocationLocked(true);
+
+                            if (!data.principalSubdivision) {
+                                setLocationConfidenceLow(true);
+                            }
+
+                            fetchAISoilProfile({
+                                state: detectedState,
+                                district: foundDistrict || data.locality || "",
+                                country: detectedCountry,
+                                taluk: foundTaluk,
+                                village: data.locality || "Farming Village",
+                                latitude: lat.toString(),
+                                longitude: lon.toString(),
+                                pincode: data.postcode || "",
+                                elevation: elevation
+                            });
+                            return;
+                        }
+                    } catch (bdcErr) {
+                        console.warn("BigDataCloud failed:", bdcErr);
+                    }
+                }
+
+                setLocationConfidenceLow(true);
+            },
+            (err) => {
+                console.warn("GPS lookup failed:", err);
+                fallbackIPLocation();
+            },
+            { enableHighAccuracy: true, timeout: 8000 }
+        );
+        // NOTE: do NOT call setIsLocating(false) here — the async callback handles it
+    };
+
+    const fallbackIPLocation = async () => {
+        try {
+            const res = await fetch('http://ipwho.is/');
+            const data = await res.json();
+            
+            if (data && data.success) {
+                const lat = data.latitude;
+                const lon = data.longitude;
+                setLatitude(lat.toString());
+                setLongitude(lon.toString());
+                setPincode(data.postal || "");
+                setCountry(data.country || "India");
+                setState(data.region || "Tamil Nadu");
+                fetchLiveWeather(lat, lon);
+
+                // Reverse geocode IP-derived coordinates for precise village / district details
+                try {
+                    const osmUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
+                    const osmRes = await fetch(osmUrl, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'User-Agent': 'AgriAid.AI-Precision-Agriculture'
+                        }
+                    });
+                    const osmData = await osmRes.json();
+                    if (osmData && osmData.address) {
+                        const addr = osmData.address;
+                        const detectedDistrict = addr.state_district || addr.district || addr.county || "";
+                        const detectedTaluk = addr.county || addr.subdistrict || "";
+                        const detectedVillage = addr.village || addr.town || addr.suburb || addr.city || addr.neighbourhood || addr.hamlet || "";
+
+                        setDistrict(detectedDistrict.replace(" District", "").replace(" Division", ""));
+                        setTaluk(detectedTaluk.replace(" Taluk", "").replace(" Sub-district", "").replace(" Tehsil", ""));
+                        setVillage(detectedVillage || addr.road || "Farming Locality");
+                        setIsLocationLocked(true);
+
+                        fetchAISoilProfile({
+                            state: data.region || "Tamil Nadu",
+                            district: detectedDistrict.replace(" District", ""),
+                            country: data.country || "India",
+                            taluk: detectedTaluk.replace(" Taluk", ""),
+                            village: detectedVillage || "Farming Locality",
+                            latitude: lat.toString(),
+                            longitude: lon.toString(),
+                            pincode: data.postal || "",
+                            elevation: elevation
+                        });
+                        return;
+                    }
+                } catch (e) {
+                    console.warn("Nominatim geocoding on fallback coordinates failed:", e);
+                }
+
+                setDistrict(data.city || "Viluppuram");
+                setTaluk("Tindivanam");
+                setVillage("Avarapakkam");
+                setIsLocationLocked(true);
+
+                fetchAISoilProfile({
+                    state: data.region || "Tamil Nadu",
+                    district: data.city || "Viluppuram",
+                    country: data.country || "India",
+                    taluk: "Tindivanam",
+                    village: "Avarapakkam",
+                    latitude: lat.toString(),
+                    longitude: lon.toString(),
+                    pincode: data.postal || "",
+                    elevation: elevation
+                });
+            } else {
+                throw new Error("ipwho.is unsuccessful");
+            }
+        } catch (e) {
+            console.warn("Fallback IP geolocator failed:", e);
+            // Secure fallback coordinates pointing to Madurai
+            setCountry("India");
+            setState("Tamil Nadu");
+            setDistrict("Madurai");
+            setTaluk("Madurai North");
+            setVillage("Athikulam");
+            setLatitude("9.953487");
+            setLongitude("78.156281");
+            setPincode("625020");
+            setElevation("101");
+            setIsLocationLocked(true);
+            setLocationConfidenceLow(true);
+
+            fetchAISoilProfile({
+                state: "Tamil Nadu",
+                district: "Madurai",
+                country: "India",
+                taluk: "Madurai North",
+                village: "Athikulam",
+                latitude: "9.953487",
+                longitude: "78.156281",
+                pincode: "625020",
+                elevation: "101"
+            });
+        } finally {
+            setIsLocating(false);
+        }
+    };
+
+    // Debounced AI search — fires only after 2s pause, Enter, or blur
+    const triggerSearch = async (query) => {
+        if (!query || query.trim().length < 2) return;
+        setIsWaitingToSearch(false);
+        setIsSuggesting(true);
+        try {
+            const res = await apiClient.get(`/api/farmer/crop-suggestions?q=${encodeURIComponent(query.trim())}`);
+            if (res.data && res.data.success) {
+                setSuggestions(res.data.data || []);
+                setShowSuggestions(true);
+            }
+        } catch (err) {
+            console.warn('Suggestions fetch failed:', err);
+        } finally {
+            setIsSuggesting(false);
+        }
+    };
+
+    const handleSearchChange = (e) => {
+        const query = e.target.value;
+        setSearchQuery(query);
+        pendingQueryRef.current = query;
+
+        if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
+        if (!query.trim() || query.length < 2) {
+            setSuggestions([]);
+            setShowSuggestions(false);
+            setIsWaitingToSearch(false);
             return;
         }
 
-        setError(null);
-        setSelectedImage(file);
-        setPreviewUrl(URL.createObjectURL(file));
-        setResult(null);
-        toast.success(t('image_selected') || 'Image selected successfully!');
+        // Show "waiting" indicator — no API call yet
+        setIsWaitingToSearch(true);
+        setIsSuggesting(false);
+
+        // Fire after 2s of inactivity
+        searchTimeoutRef.current = setTimeout(() => {
+            triggerSearch(pendingQueryRef.current);
+        }, 2000);
     };
 
-    // Camera Functions
+    const handleSearchKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+            triggerSearch(pendingQueryRef.current);
+        }
+    };
+
+    const handleSearchBlur = () => {
+        // Skip if user is clicking a suggestion item
+        if (isSelectingRef.current) return;
+        if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+        setIsWaitingToSearch(false);
+        if (pendingQueryRef.current.trim().length >= 2) {
+            triggerSearch(pendingQueryRef.current);
+        }
+    };
+
+    const selectSuggestion = (crop) => {
+        isSelectingRef.current = false;
+        setSearchQuery(crop.name);
+        setCropType(crop.name);
+        setScientificName(crop.scientific);
+        setFarmingType(crop.category);
+        setShowSuggestions(false);
+        setSuggestions([]);
+    };
+
+    // Camera triggers
     const startCamera = async () => {
         setIsCameraOpen(true);
         setError(null);
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'environment' } // Prefer back camera on mobile
+                video: { facingMode: 'environment' }
             });
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-            }
+            if (videoRef.current) videoRef.current.srcObject = stream;
         } catch (err) {
-            console.error("Camera Error:", err);
-            setError("Could not access camera. Please allow permissions.");
+            console.error("Camera failed:", err);
+            setError("Could not access camera. Verify device permissions.");
             setIsCameraOpen(false);
         }
     };
 
     const stopCamera = () => {
         if (videoRef.current && videoRef.current.srcObject) {
-            const tracks = videoRef.current.srcObject.getTracks();
-            tracks.forEach(track => track.stop());
+            videoRef.current.srcObject.getTracks().forEach(track => track.stop());
             videoRef.current.srcObject = null;
         }
         setIsCameraOpen(false);
@@ -237,166 +602,238 @@ const ImageUploadForm = () => {
         if (videoRef.current && canvasRef.current) {
             const video = videoRef.current;
             const canvas = canvasRef.current;
-
-            // Set canvas size to match video
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-
-            // Draw video frame to canvas
             const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            // Convert to Blob/File
             canvas.toBlob((blob) => {
-                const file = new File([blob], "captured_image.jpg", { type: "image/jpeg" });
-                validateAndPreview(file);
+                const file = new File([blob], "camera_snapshot.jpg", { type: "image/jpeg" });
+                if (previewUrl) URL.revokeObjectURL(previewUrl);
+                setSelectedImage(file);
+                setPreviewUrl(URL.createObjectURL(file));
                 stopCamera();
+                autoUploadAndRunDiagnostics(file);
             }, 'image/jpeg', 0.95);
         }
     };
 
-    const handleAutoLocation = () => {
-        if (!navigator.geolocation) {
-            toast.error("Geolocation is not supported by your browser");
-            return;
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (previewUrl) URL.revokeObjectURL(previewUrl);
+            setSelectedImage(file);
+            setPreviewUrl(URL.createObjectURL(file));
+            autoUploadAndRunDiagnostics(file);
         }
-
-        setIsLocating(true);
-        const locToast = toast.loading("Detecting your location...");
-
-        navigator.geolocation.getCurrentPosition(
-            async (position) => {
-                const { latitude, longitude } = position.coords;
-                try {
-                    const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
-                    const data = await res.json();
-
-                    // Map State
-                    const detectedState = data.principalSubdivision;
-                    const detectedCity = data.city || data.locality;
-                    const adminLevels = data.localityInfo?.administrative || [];
-
-                    // Match with our local data
-                    const matchedState = STATES.find(s =>
-                        detectedState.toLowerCase().includes(s.toLowerCase()) ||
-                        s.toLowerCase().includes(detectedState.toLowerCase())
-                    );
-
-                    if (matchedState) {
-                        setState(matchedState);
-                        const districts = STATE_DISTRICTS[matchedState];
-
-                        // 1. Try matching against the main city/locality
-                        let matchedDist = districts.find(d =>
-                            detectedCity.toLowerCase().includes(d.toLowerCase()) ||
-                            d.toLowerCase().includes(detectedCity.toLowerCase())
-                        );
-
-                        // 2. If no match, search through all administrative levels (more accurate for Districts)
-                        if (!matchedDist) {
-                            for (const level of adminLevels) {
-                                const found = districts.find(d =>
-                                    level.name.toLowerCase().includes(d.toLowerCase()) ||
-                                    d.toLowerCase().includes(level.name.toLowerCase())
-                                );
-                                if (found) {
-                                    matchedDist = found;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (matchedDist) {
-                            setDistrict(matchedDist);
-                            toast.success(`Located: ${matchedDist}, ${matchedState}`, { id: locToast });
-                        } else {
-                            setDistrict(districts[0]);
-                            toast.success(`Located: ${matchedState} (District estimated)`, { id: locToast });
-                        }
-                    } else {
-                        toast.error("Could not match your region to our supported states.", { id: locToast });
-                    }
-                } catch (err) {
-                    toast.error("Failed to resolve location name.", { id: locToast });
-                } finally {
-                    setIsLocating(false);
-                }
-            },
-            (err) => {
-                toast.error("Permission denied or location unavailable.", { id: locToast });
-                setIsLocating(false);
-            },
-            { enableHighAccuracy: true, timeout: 5000 }
-        );
     };
 
-    // Cleanup camera on unmount
-    useEffect(() => {
-        return () => {
-            if (videoRef.current && videoRef.current.srcObject) {
-                const tracks = videoRef.current.srcObject.getTracks();
-                tracks.forEach(track => track.stop());
-            }
-        };
-    }, []);
-
-    const { refreshGlobalData } = useGlobalState();
-
-    const handleAnalyze = async () => {
-        if (!selectedImage) return;
-
+    // Auto Diagnostics with Full Location details
+    const autoUploadAndRunDiagnostics = async (file) => {
+        if (!file) return;
         setLoading(true);
         setError(null);
+        setResult(null);
+        setPendingAnalysis(null);
+        setConfidenceMode('none');
+        setPipelineStage(1);
+
+        const stageInterval = setInterval(() => {
+            setPipelineStage(prev => (prev < PIPELINE_STAGES.length ? prev + 1 : prev));
+        }, 1500);
+
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('country', country || 'India');
+        formData.append('state', state || 'Tamil Nadu');
+        formData.append('district', district || 'Viluppuram');
+        formData.append('taluk', taluk || '');
+        formData.append('village', village || '');
+        formData.append('latitude', latitude || '');
+        formData.append('longitude', longitude || '');
+        formData.append('pincode', pincode || '');
+        formData.append('elevation', elevation || '');
+
+        try {
+            const response = await apiClient.post(`/api/farmer/analyze`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            clearInterval(stageInterval);
+            const data = response.data;
+
+            if (data.isValidPlant === false) {
+                toast.error("Please upload a valid crop or plant image.", {
+                    duration: 5000,
+                    style: { background: '#340b13', color: '#fca5a5', border: '1px solid #f87171' }
+                });
+                setError("Please upload a valid crop or plant image.");
+                setSelectedImage(null);
+                setPreviewUrl(null);
+                setLoading(false);
+                return;
+            }
+
+            const confidence = data.diseaseAnalysis?.confidence || 85.00;
+            const detectedCropName = data.diseaseAnalysis?.crop || 'Rice';
+            const detectedSciName = data.diseaseAnalysis?.scientificName || 'Oryza sativa';
+            const detectedCat = data.diseaseAnalysis?.category || 'field';
+
+            if (confidence > 85) {
+                setCropType(detectedCropName);
+                setSearchQuery(detectedCropName);
+                setScientificName(detectedSciName);
+                setFarmingType(detectedCat);
+                setResult(data);
+                setConfidenceMode('none');
+                toast.success(`🌱 Auto-Detected: ${detectedCropName} (${confidence.toFixed(0)}% Confidence)`);
+            } else if (confidence >= 60 && confidence <= 85) {
+                setPendingAnalysis(data);
+                setConfidenceMode('confirm');
+                toast("AI crop recognition confidence is moderate. Verification required.", { icon: '🤔' });
+            } else {
+                setPendingAnalysis(data);
+                setConfidenceMode('low_confidence');
+                toast.error("Unable to confidently identify crop. Select crop manually.", { duration: 5000 });
+            }
+
+        } catch (err) {
+            clearInterval(stageInterval);
+            const errorMsg = err.response?.data?.message || 'Botanical verification failed. Please try again.';
+            toast.error(errorMsg);
+            setError(errorMsg);
+            setSelectedImage(null);
+            setPreviewUrl(null);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const acceptPendingResult = () => {
+        if (!pendingAnalysis) return;
+        const crop = pendingAnalysis.diseaseAnalysis.crop;
+        const scientific = pendingAnalysis.diseaseAnalysis.scientificName;
+        const category = pendingAnalysis.diseaseAnalysis.category;
+
+        setCropType(crop);
+        setSearchQuery(crop);
+        setScientificName(scientific);
+        setFarmingType(category);
+        setResult(pendingAnalysis);
+        setConfidenceMode('none');
+        setPendingAnalysis(null);
+        toast.success(`Confirmed Species: ${crop}`);
+    };
+
+    const rejectPendingResult = () => {
+        setCropType('');
+        setSearchQuery('');
+        setScientificName('');
+        setConfidenceMode('low_confidence');
+    };
+
+    const triggerManualDiagnostics = async () => {
+        if (!selectedImage || !cropType) return;
+        setLoading(true);
+        setError(null);
+        setResult(null);
+        setConfidenceMode('none');
+        setPipelineStage(3);
 
         const formData = new FormData();
         formData.append('image', selectedImage);
         formData.append('cropType', cropType);
-        formData.append('farmingType', farmingType);
-        formData.append('district', district);
-        formData.append('state', state);
-
-        const analyzeToast = toast.loading(t('analyzing_toast') || 'Analyzing your crop...');
+        formData.append('country', country || 'India');
+        formData.append('state', state || 'Tamil Nadu');
+        formData.append('district', district || 'Viluppuram');
+        formData.append('taluk', taluk || '');
+        formData.append('village', village || '');
+        formData.append('latitude', latitude || '');
+        formData.append('longitude', longitude || '');
+        formData.append('pincode', pincode || '');
+        formData.append('elevation', elevation || '');
 
         try {
-            const response = await axios.post(`${API_BASE_URL}/api/farmer/analyze`, formData, {
+            const response = await apiClient.post(`/api/farmer/analyze`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
-            // Reduced artificial delay for better UX
-            setTimeout(() => {
-                setResult(response.data);
-                setLoading(false);
-                toast.success(t('analysis_success') || 'Crop analysis complete!', { id: analyzeToast });
-                refreshGlobalData(); // Sync history instantly
-            }, 200);
-
+            setResult(response.data);
+            toast.success("Crop report successfully compiled!");
+            refreshGlobalData();
         } catch (err) {
-            const errorMsg = err.response?.data?.message || err.response?.data?.details || 'Failed to analyze image. Please try again.';
-            toast.error(errorMsg, { id: analyzeToast });
+            const errorMsg = err.response?.data?.message || 'Analysis failed.';
+            toast.error(errorMsg);
+            setError(errorMsg);
+        } finally {
             setLoading(false);
         }
     };
 
     const resetForm = () => {
+        setResult(null);
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
         setSelectedImage(null);
         setPreviewUrl(null);
-        setResult(null);
-        setError(null);
+        setCropType('');
+        setSearchQuery('');
+        setScientificName('');
+        setConfidenceMode('none');
+        setPendingAnalysis(null);
     };
 
-    const [isSpeaking, setIsSpeaking] = useState(false);
+    const handleVoiceInput = () => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            toast.error("Voice inputs are not supported in this browser.");
+            return;
+        }
 
-    // Text-to-Speech Function
-    const speakResult = (text) => {
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'en-IN';
+        recognition.interimResults = false;
+
+        recognition.onstart = () => {
+            setIsListening(true);
+            toast.loading("Listening for crop species...", { id: 'voice-toast' });
+        };
+
+        recognition.onresult = async (event) => {
+            const transcript = event.results[0][0].transcript.toLowerCase();
+            toast.loading(`Processing query: "${transcript}"...`, { id: 'voice-toast' });
+            
+            try {
+                const res = await apiClient.get(`/api/farmer/crop-suggestions?q=${encodeURIComponent(transcript)}`);
+                if (res.data && res.data.success && res.data.data && res.data.data.length > 0) {
+                    const matched = res.data.data[0];
+                    setSearchQuery(matched.name);
+                    setCropType(matched.name);
+                    setScientificName(matched.scientific);
+                    setFarmingType(matched.category);
+                    toast.success(`Voice set: ${matched.name}`, { id: 'voice-toast' });
+                } else {
+                    toast("Could not identify crop. Please type manually.", { icon: '🤔', id: 'voice-toast' });
+                }
+            } catch (err) {
+                toast.error("Voice matching failed.", { id: 'voice-toast' });
+            }
+        };
+
+        recognition.onerror = () => {
+            setIsListening(false);
+            toast.error("Voice connection failed.", { id: 'voice-toast' });
+        };
+
+        recognition.onend = () => setIsListening(false);
+        recognition.start();
+    };
+
+    const speakAdvice = (text) => {
         if (!window.speechSynthesis) return;
-
-        // Cancel any ongoing speech
         window.speechSynthesis.cancel();
 
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'en-IN'; // Indian English
-        utterance.rate = 0.9; // Slightly slower for clarity
-        utterance.pitch = 1;
+        utterance.lang = 'en-IN';
+        utterance.rate = 0.95;
 
         utterance.onstart = () => setIsSpeaking(true);
         utterance.onend = () => setIsSpeaking(false);
@@ -410,1171 +847,882 @@ const ImageUploadForm = () => {
         setIsSpeaking(false);
     };
 
-    // Cleanup speech on unmount
-    useEffect(() => {
-        return () => {
-            window.speechSynthesis.cancel();
-        };
-    }, []);
-
-
-
-    // Voice Command Handler
-    const handleVoiceInput = () => {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            toast.error("Voice input is not supported in this browser. Try Chrome/Edge.");
-            return;
-        }
-
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'en-IN'; // Optimized for Indian accents/context
-        recognition.interimResults = false;
-        recognition.continuous = false; // Stop after one command
-
-        recognition.onstart = () => {
-            setIsListening(true);
-            toast.loading("Listening... Say crop name, state, or district", { id: 'voice-toast' });
-        };
-
-        recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript.toLowerCase();
-            console.log("Voice Command:", transcript);
-            toast.success(`Heard: "${transcript}"`, { id: 'voice-toast' });
-
-            let matched = false;
-
-            // Simple Keyword Matching logic
-            // 1. Detect Crop
-            // 1. Detect Crop (Search all categories)
-            const allCrops = [...CROP_DATA.horticulture, ...CROP_DATA.field];
-            const detectedCrop = allCrops.find(crop => transcript.includes(crop.toLowerCase()));
-            if (detectedCrop) {
-                setCropType(detectedCrop);
-                matched = true;
-            }
-
-            // 2. Detect State
-            const detectedState = STATES.find(s => transcript.includes(s.toLowerCase()));
-            if (detectedState) {
-                setState(detectedState);
-                // Reset/Assign first district of new state
-                if (STATE_DISTRICTS[detectedState]) {
-                    setDistrict(STATE_DISTRICTS[detectedState][0]);
-                }
-                matched = true;
-            }
-
-            // 3. Detect District (Search across all states if state not found, or in current state)
-            const allDistricts = Object.values(STATE_DISTRICTS).flat();
-            const detectedDist = allDistricts.find(d => transcript.includes(d.toLowerCase()));
-            if (detectedDist) {
-                // If we found a district, find its state too
-                for (const [s, districts] of Object.entries(STATE_DISTRICTS)) {
-                    if (districts.includes(detectedDist)) {
-                        setState(s);
-                        setDistrict(detectedDist);
-                        break;
-                    }
-                }
-                matched = true;
-            }
-
-            if (!matched) {
-                toast("Could not match any crop or location. Please try again.", { icon: '🤔', id: 'voice-toast' });
-            } else {
-                toast.success("Details updated from voice!", { id: 'voice-toast' });
-            }
-
-            setIsListening(false);
-        };
-
-        recognition.onerror = (event) => {
-            console.error("Voice Error:", event.error);
-            setIsListening(false);
-
-            if (event.error === 'no-speech') {
-                toast.error("No speech detected. Please try again.", { id: 'voice-toast' });
-            } else if (event.error === 'not-allowed') {
-                toast.error("Microphone access denied. Please allow permissions in browser settings.", { id: 'voice-toast' });
-            } else if (event.error === 'audio-capture') {
-                toast.error("No microphone found. Please check your audio settings.", { id: 'voice-toast' });
-            } else {
-                toast.error(`Voice Error: ${event.error}`, { id: 'voice-toast' });
-            }
-        };
-
-        recognition.onend = () => {
-            setIsListening(false);
-        };
-
-        recognition.start();
-    };
-
-    // Helper to determine status color
-    const getStatusColor = (disease, isLowConf) => {
-        if (isLowConf) return 'yellow';
-        if (disease.toLowerCase().includes('healthy')) return 'green';
-        return 'red';
+    const getSeverityPercentage = (sevStr) => {
+        if (!sevStr) return 40;
+        const num = parseInt(sevStr.replace(/\D/g, ''));
+        if (!isNaN(num)) return num;
+        const low = sevStr.toLowerCase();
+        if (low.includes('high') || low.includes('severe')) return 80;
+        if (low.includes('medium') || low.includes('moderate')) return 45;
+        return 20;
     };
 
     const getTranslatedResult = () => {
         if (!result) return null;
         const disease = result.diseaseAnalysis?.disease || 'Unknown';
-        const diseaseKey = disease.toLowerCase().replace(/ /g, '_');
-
-        const getText = (key, fallback) => {
-            const val = t(key);
-            return (val && val !== key) ? val : fallback;
-        };
-
-        const translatedCrop = t(`crop_${cropType.toLowerCase()}`) || cropType;
-        const contextString = district ? `${t('rec_for') || 'For'} ${translatedCrop} ${t('rec_in') || 'in'} ${district}: ` : '';
-        const baseInstruction = getText(`rec_${diseaseKey}_inst`, result.recommendation?.instructions || result.recommendation?.farmerNote || '');
+        const severityPct = getSeverityPercentage(result.diseaseAnalysis?.severity);
+        const isHealthy = disease.toLowerCase().includes('healthy');
 
         return {
-            diseaseName: getText(`disease_${diseaseKey}`, disease.replace(/_/g, ' ')),
-            fertilizer: getText(`rec_${diseaseKey}_fert`, result.recommendation?.fertilizer || 'Consult agronomist'),
-            dosage: getText(`rec_${diseaseKey}_dose`, result.recommendation?.quantity || 'As advised'),
-            instructions: `${contextString}${baseInstruction}`,
-            isLowConfidence: (result.diseaseAnalysis?.confidence || 0) < 60,
-            confidence: result.diseaseAnalysis?.confidence || 0,
-            weather: result.weatherNote || null,
-            message: result.recommendation?.farmerNote || null,
-            topPredictions: []
+            diseaseName: result.recommendation?.diseaseName || disease,
+            isHealthy,
+            severityPercentage: severityPct,
+            fertilizer: result.recommendation?.fertilizer || 'Phytosanitary treatment.',
+            dosage: result.recommendation?.quantity || 'As prescribed',
+            instructions: result.recommendation?.instructions || result.recommendation?.farmerNote || 'Monitor plant boundaries.',
+            organicAlternative: result.recommendation?.organicAlternative || 'Biological control alternative.',
+            prevention: result.recommendation?.prevention || 'Clear residues from borders.',
+            confidence: result.diseaseAnalysis?.confidence || 85.00,
+            weather: result.weatherNote || 'Temperature 28°C, Humidity 64%.',
+            isHighSpreadRisk: severityPct > 60 && !isHealthy,
+            healthScore: isHealthy ? 98 : Math.max(10, 100 - severityPct),
+
+            affectedAreas: result.recommendation?.affectedAreas || 'Leaves and surrounding stems.',
+            cureMethods: result.recommendation?.cureMethods || 'Apply standard treatment.',
+            organicSolutions: result.recommendation?.organicSolutions || 'Neem oil or biological control.',
+            fertilizerSuggestions: result.recommendation?.fertilizerSuggestions || 'Balance dynamic nutrients.',
+            irrigationAdvice: result.recommendation?.irrigationAdvice || 'Drip irrigate at regular intervals.',
+            weatherRisks: result.recommendation?.weatherRisks || 'High humidity acts as a mycelial trigger.',
+            preventionTips: result.recommendation?.preventionTips || 'Sanitize agricultural equipment.',
+            yieldProtectionAdvice: result.recommendation?.yieldProtectionAdvice || 'Preserve foliage to secure yield.',
+            soilRecommendations: result.recommendation?.soilRecommendations || 'Adjust top-soil properties.',
+            recoveryTimeline: result.recommendation?.recoveryTimeline || [],
+            marketInsights: result.recommendation?.marketInsights || 'Pricing indicates stable market trends.',
+            chatSuggestions: result.recommendation?.chatSuggestions || []
         };
     };
 
-    const translatedResult = getTranslatedResult();
+    const txResult = getTranslatedResult();
+    const soilGuidanceText = txResult ? getNutrientGuidance(soilData.n, soilData.p, soilData.k, txResult.diseaseName) : '';
 
     return (
-        <div className="w-full max-w-[1800px] mx-auto flex flex-col md:flex-row gap-5 md:gap-8 items-start p-3 md:p-6 pb-20 md:pb-6">
+        <div className="w-full min-h-screen bg-slate-50 dark:bg-[#030914] text-slate-800 dark:text-[#F8FAFC] p-3 lg:p-4 flex flex-col lg:flex-row gap-4">
 
-            {/* LEFT COLUMN: INPUT SECTION */}
-            <div className={`w-full md:w-[440px] lg:w-[460px] shrink-0 transition-all duration-700 ${translatedResult ? 'opacity-100' : ''}`}>
-                <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 md:p-6 shadow-[0_2px_20px_rgba(0,0,0,0.06)] border border-slate-200/70 dark:border-slate-700/70 relative overflow-hidden">
-
-                    {/* Subtle top accent */}
-                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-emerald-400 via-teal-400 to-blue-400 rounded-t-2xl" />
-                    <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-emerald-400/6 to-transparent rounded-bl-full pointer-events-none" />
-
-                    <div className="relative z-10">
-                        {/* Header */}
-                        <div className="flex justify-between items-center mb-6">
-                            <div className="flex items-center gap-3">
-                                <div className="relative">
-                                    <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl shadow-lg shadow-emerald-500/25">
-                                        <ScanLine className="w-5 h-5 text-white" />
-                                    </div>
-                                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-white dark:border-slate-900 animate-pulse" />
-                                </div>
-                                <div className="flex flex-col">
-                                    <h2 className="text-base font-bold text-gray-900 dark:text-white leading-tight tracking-tight">
-                                        Diagnostic Input
-                                    </h2>
-                                    <span className="text-xs text-slate-400 dark:text-slate-500 font-medium mt-0.5">Configure Parameters</span>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={handleVoiceInput}
-                                    className={clsx(
-                                        "p-2.5 rounded-xl border transition-all relative overflow-hidden group",
-                                        isListening ? "bg-red-500 text-white border-red-400" : "bg-white dark:bg-slate-800 text-gray-400 border-gray-100 dark:border-slate-700 hover:border-emerald-500 hover:text-emerald-500 hover:shadow-lg"
-                                    )}
-                                >
-                                    <Mic className={clsx("w-4 h-4", isListening && "animate-pulse")} />
-                                    {isListening && <motion.div className="absolute inset-0 bg-white/20" animate={{ x: ['100%', '-100%'] }} transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }} />}
-                                </button>
-                            </div>
+            {/* ==================== SIDEBAR ==================== */}
+            <div className="w-full lg:w-[clamp(280px,22vw,360px)] shrink-0 flex flex-col gap-3 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+                {/* ── Header ── */}
+                <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-md border border-slate-200 dark:border-slate-200 dark:border-white/10 rounded-2xl p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="shrink-0 p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl shadow-lg shadow-emerald-500/20">
+                            <ScanLine className="w-4 h-4 text-white" />
                         </div>
-
-                        <div className="space-y-5">
-                            {/* Crop Category Toggle */}
-                            <div className="space-y-2">
-                                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Crop Category</label>
-                                <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex items-center relative border border-slate-200/50 dark:border-slate-700/50">
-                                    <motion.div
-                                        layout
-                                        className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg shadow-sm transition-all duration-300 ${farmingType === 'horticulture' ? 'left-1 bg-white dark:bg-slate-700' : 'left-[calc(50%+3px)] bg-white dark:bg-slate-700'}`}
-                                    />
-                                    <button
-                                        onClick={() => setFarmingType('horticulture')}
-                                        className={`flex-1 relative z-10 py-2.5 rounded-lg text-[13px] font-semibold transition-all duration-200 ${farmingType === 'horticulture' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600'}`}
-                                    >
-                                        <div className="flex items-center justify-center gap-2">
-                                            <Sprout className={clsx("w-3.5 h-3.5", farmingType === 'horticulture' ? "text-emerald-500" : "text-slate-300")} />
-                                            <span>Horticulture</span>
-                                        </div>
-                                    </button>
-                                    <button
-                                        onClick={() => setFarmingType('field')}
-                                        className={`flex-1 relative z-10 py-2.5 rounded-lg text-[13px] font-semibold transition-all duration-200 ${farmingType === 'field' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600'}`}
-                                    >
-                                        <div className="flex items-center justify-center gap-2">
-                                            <Tractor className={clsx("w-3.5 h-3.5", farmingType === 'field' ? "text-blue-500" : "text-slate-300")} />
-                                            <span>Field Crops</span>
-                                        </div>
-                                    </button>
-                                </div>
-                            </div>
-
-
-                            {/* Crop Selector Container */}
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-1 gap-4">
-                                    {/* Crop Selector */}
-                                    <div className="relative group/input">
-                                        <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Target Crop Species</label>
-                                        <FormControl fullWidth variant="standard">
-                                            <Select
-                                                value={cropType}
-                                                onChange={(e) => setCropType(e.target.value)}
-                                                displayEmpty
-                                                disableUnderline
-                                                sx={{
-                                                    backgroundColor: 'rgba(255,255,255,0.8)',
-                                                    backdropFilter: 'blur(12px)',
-                                                    borderRadius: '0.75rem',
-                                                    padding: { xs: '0.4rem 0.8rem', md: '0.6rem 1rem' },
-                                                    border: '1px solid',
-                                                    borderColor: '#e2e8f0',
-                                                    fontSize: '0.9rem',
-                                                    fontWeight: 500,
-                                                    color: '#334155',
-                                                    transition: 'all 0.2s',
-                                                    '.dark &': {
-                                                        backgroundColor: 'rgba(30, 41, 59, 0.6)',
-                                                        borderColor: '#334155',
-                                                        color: '#f1f5f9'
-                                                    },
-                                                    '&:hover': {
-                                                        borderColor: '#10b981',
-                                                        backgroundColor: '#fff',
-                                                    },
-                                                    '&.Mui-focused': {
-                                                        borderColor: '#10b981',
-                                                        backgroundColor: '#fff',
-                                                        boxShadow: '0 0 0 3px rgba(16, 185, 129, 0.1)'
-                                                    },
-                                                    '& .MuiSelect-select': {
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: '0.75rem',
-                                                        paddingRight: '2.5rem !important'
-                                                    }
-                                                }}
-                                                MenuProps={{
-                                                    PaperProps: {
-                                                        sx: {
-                                                            borderRadius: '1.25rem',
-                                                            marginTop: '0.75rem',
-                                                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
-                                                            border: '1px solid rgba(0,0,0,0.05)',
-                                                            maxHeight: { xs: 200, md: 350 },
-                                                            backgroundColor: 'rgba(255, 255, 255, 0.98)',
-                                                            backdropFilter: 'blur(20px)',
-                                                            '&::-webkit-scrollbar': { width: '4px' },
-                                                            '&::-webkit-scrollbar-thumb': { backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: '10px' },
-                                                            '.dark &': {
-                                                                backgroundColor: 'rgba(15, 23, 42, 0.98)',
-                                                                border: '1px solid rgba(255,255,255,0.1)',
-                                                                color: '#f1f5f9',
-                                                                '&::-webkit-scrollbar-thumb': { backgroundColor: 'rgba(255,255,255,0.1)' }
-                                                            }
-                                                        }
-                                                    }
-                                                }}
-                                                renderValue={(selected) => {
-                                                    if (!selected) {
-                                                        return <span className="text-gray-400 font-medium italic text-sm">Select Crop</span>;
-                                                    }
-                                                    return (
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" />
-                                                            <span className="text-gray-800 dark:text-gray-100">{t(`crop_${selected.toLowerCase()}`) || selected}</span>
-                                                        </div>
-                                                    );
-                                                }}
-                                            >
-                                                <MenuItem disabled value="">
-                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-2">Available Species</span>
-                                                </MenuItem>
-                                                {CROP_DATA[farmingType].map(c => (
-                                                    <MenuItem key={c} value={c} sx={{
-                                                        borderRadius: '0.5rem',
-                                                        margin: { xs: '0.1rem 0.25rem', md: '0.2rem 0.5rem' },
-                                                        fontWeight: 600,
-                                                        fontSize: { xs: '0.75rem', md: '0.9rem' },
-                                                        minHeight: { xs: 'auto', md: '48px' },
-                                                        color: '#1f2937',
-                                                        '.dark &': { color: '#f8fafc' },
-                                                        '&:hover': { backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981' },
-                                                        '&.Mui-selected': { backgroundColor: 'rgba(16, 185, 129, 0.15) !important', color: '#10b981' }
-                                                    }}>
-                                                        {t(`crop_${c.toLowerCase()}`) || c}
-                                                    </MenuItem>
-                                                ))}
-                                            </Select>
-                                        </FormControl>
-                                    </div>
-
-                                    {/* Location Header with Auto-Detect */}
-                                    <div className="flex justify-between items-center mb-1">
-                                        <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Cultivation Region</label>
-                                        <button
-                                            type="button"
-                                            onClick={handleAutoLocation}
-                                            disabled={isLocating}
-                                            className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 px-2.5 py-1 rounded-lg transition-all border border-emerald-200/50 dark:border-emerald-500/20"
-                                        >
-                                            {isLocating ? (
-                                                <Loader2 className="w-3 h-3 animate-spin" />
-                                            ) : (
-                                                <MapPin className="w-3 h-3" />
-                                            )}
-                                            {isLocating ? 'Detecting...' : 'Auto-Detect'}
-                                        </button>
-                                    </div>
-
-                                    {/* Location Grid */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {/* State Selector */}
-                                        <div className="space-y-2">
-                                            <label className="block text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">{t('state')}</label>
-                                            <FormControl fullWidth variant="standard">
-                                                <Select
-                                                    value={state}
-                                                    onChange={(e) => {
-                                                        const newState = e.target.value;
-                                                        setState(newState);
-                                                        if (STATE_DISTRICTS[newState] && STATE_DISTRICTS[newState].length > 0) {
-                                                            setDistrict(STATE_DISTRICTS[newState][0]);
-                                                        } else {
-                                                            setDistrict('');
-                                                        }
-                                                    }}
-                                                    displayEmpty
-                                                    disableUnderline
-                                                    sx={{
-                                                        backgroundColor: 'rgba(255,255,255,0.8)',
-                                                        backdropFilter: 'blur(12px)',
-                                                        borderRadius: '0.75rem',
-                                                        padding: { xs: '0.4rem 0.8rem', md: '0.6rem 1rem' },
-                                                        border: '1px solid',
-                                                        borderColor: '#e2e8f0',
-                                                        fontSize: '0.9rem',
-                                                        fontWeight: 500,
-                                                        color: '#334155',
-                                                        transition: 'all 0.2s',
-                                                        '.dark &': {
-                                                            backgroundColor: 'rgba(30, 41, 59, 0.6)',
-                                                            borderColor: '#334155',
-                                                            color: '#f1f5f9'
-                                                        },
-                                                        '&:hover': {
-                                                            borderColor: '#10b981',
-                                                            backgroundColor: '#fff',
-                                                        },
-                                                        '&.Mui-focused': {
-                                                            borderColor: '#10b981',
-                                                            backgroundColor: '#fff',
-                                                            boxShadow: '0 0 0 3px rgba(16, 185, 129, 0.1)'
-                                                        },
-                                                        '& .MuiSelect-select': {
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: '0.5rem',
-                                                        }
-                                                    }}
-                                                    MenuProps={{
-                                                        PaperProps: {
-                                                            sx: {
-                                                                borderRadius: '1.25rem',
-                                                                marginTop: '0.5rem',
-                                                                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
-                                                                border: '1px solid rgba(0,0,0,0.05)',
-                                                                maxHeight: { xs: 200, md: 300 },
-                                                                backgroundColor: 'rgba(255, 255, 255, 0.98)',
-                                                                backdropFilter: 'blur(20px)',
-                                                                '.dark &': {
-                                                                    backgroundColor: 'rgba(15, 23, 42, 0.98)',
-                                                                    border: '1px solid rgba(255,255,255,0.1)',
-                                                                    color: '#f1f5f9'
-                                                                }
-                                                            }
-                                                        }
-                                                    }}
-                                                    renderValue={(selected) => selected ? <span className="truncate">{selected}</span> : <span className="text-gray-400 font-medium italic text-sm">Select State</span>}
-                                                >
-                                                    <MenuItem disabled value="">
-                                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-2">Available States</span>
-                                                    </MenuItem>
-                                                    {STATES.map(s => {
-                                                        let key = `state_${s.toLowerCase().replace(/ /g, '_')}`;
-                                                        if (s === "Tamil Nadu") key = "state_tn";
-                                                        if (s === "Uttar Pradesh") key = "state_up";
-                                                        if (s === "Maharashtra") key = "state_mh";
-                                                        if (s === "Punjab") key = "state_pb";
-                                                        if (s === "Karnataka") key = "state_ka";
-                                                        if (s === "Kerala") key = "state_kl";
-                                                        return (
-                                                            <MenuItem key={s} value={s} sx={{
-                                                                borderRadius: '0.75rem',
-                                                                margin: { xs: '0.1rem 0.25rem', md: '0.2rem 0.5rem' },
-                                                                fontWeight: 600,
-                                                                fontSize: { xs: '0.75rem', md: '0.85rem' },
-                                                                minHeight: { xs: 'auto', md: '48px' },
-                                                                color: '#1f2937',
-                                                                '.dark &': { color: '#f8fafc' },
-                                                                '&:hover': { backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981' },
-                                                                '&.Mui-selected': { backgroundColor: 'rgba(16, 185, 129, 0.15) !important', color: '#10b981' }
-                                                            }}>
-                                                                {t(key) || s}
-                                                            </MenuItem>
-                                                        );
-                                                    })}
-                                                </Select>
-                                            </FormControl>
-                                        </div>
-
-                                        {/* District Selector */}
-                                        <div className="space-y-2">
-                                            <label className="block text-[13px] font-medium text-slate-500 dark:text-slate-400 pl-1">{t('district')}</label>
-                                            <FormControl fullWidth variant="standard">
-                                                <Select
-                                                    value={district}
-                                                    onChange={(e) => setDistrict(e.target.value)}
-                                                    displayEmpty
-                                                    disableUnderline
-                                                    sx={{
-                                                        backgroundColor: 'rgba(255,255,255,0.8)',
-                                                        backdropFilter: 'blur(12px)',
-                                                        borderRadius: '0.75rem',
-                                                        padding: { xs: '0.4rem 0.8rem', md: '0.6rem 1rem' },
-                                                        border: '1px solid',
-                                                        borderColor: '#e2e8f0',
-                                                        fontSize: '0.9rem',
-                                                        fontWeight: 500,
-                                                        color: '#334155',
-                                                        transition: 'all 0.2s',
-                                                        '.dark &': {
-                                                            backgroundColor: 'rgba(30, 41, 59, 0.6)',
-                                                            borderColor: '#334155',
-                                                            color: '#f1f5f9'
-                                                        },
-                                                        '&:hover': {
-                                                            borderColor: '#10b981',
-                                                            backgroundColor: '#fff',
-                                                        },
-                                                        '&.Mui-focused': {
-                                                            borderColor: '#10b981',
-                                                            backgroundColor: '#fff',
-                                                            boxShadow: '0 0 0 3px rgba(16, 185, 129, 0.1)'
-                                                        },
-                                                        '& .MuiSelect-select': {
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: '0.5rem',
-                                                        }
-                                                    }}
-                                                    MenuProps={{
-                                                        PaperProps: {
-                                                            sx: {
-                                                                borderRadius: '1.25rem',
-                                                                marginTop: '0.5rem',
-                                                                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
-                                                                border: '1px solid rgba(0,0,0,0.05)',
-                                                                maxHeight: { xs: 200, md: 300 },
-                                                                backgroundColor: 'rgba(255, 255, 255, 0.98)',
-                                                                backdropFilter: 'blur(20px)',
-                                                                '.dark &': {
-                                                                    backgroundColor: 'rgba(15, 23, 42, 0.98)',
-                                                                    border: '1px solid rgba(255,255,255,0.1)',
-                                                                    color: '#f1f5f9'
-                                                                }
-                                                            }
-                                                        }
-                                                    }}
-                                                    renderValue={(selected) => selected ? <span className="truncate">{selected}</span> : <span className="text-gray-400 font-medium italic text-sm">Select District</span>}
-                                                >
-                                                    <MenuItem disabled value="">
-                                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-2">Available Districts</span>
-                                                    </MenuItem>
-                                                    {(STATE_DISTRICTS[state] || []).map((d) => (
-                                                        <MenuItem key={d} value={d} sx={{
-                                                            borderRadius: '0.75rem',
-                                                            margin: { xs: '0.1rem 0.25rem', md: '0.25rem 0.5rem' },
-                                                            fontWeight: 600,
-                                                            fontSize: { xs: '0.75rem', md: '0.9rem' },
-                                                            minHeight: { xs: 'auto', md: '48px' },
-                                                            color: '#1f2937',
-                                                            '.dark &': { color: '#f8fafc' },
-                                                            '&:hover': { backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981' },
-                                                            '&.Mui-selected': { backgroundColor: 'rgba(16, 185, 129, 0.15) !important', color: '#10b981' }
-                                                        }}>
-                                                            {t(`dist_${d.toLowerCase().replace(/ /g, '_').replace(/[()]/g, '')}`) || d}
-                                                        </MenuItem>
-                                                    ))}
-                                                </Select>
-                                            </FormControl>
-                                        </div>
-                                    </div>
-
-                                    {/* Soil Health: Advanced Toggle & Grid */}
-                                    <div className="space-y-3">
-                                        <button
-                                            onClick={() => setShowSoilAdvanced(!showSoilAdvanced)}
-                                            className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/70 dark:border-slate-700/60 hover:border-emerald-400/50 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 transition-all duration-200 group"
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-emerald-500/10 rounded-lg group-hover:bg-emerald-500 transition-colors duration-200">
-                                                    <Beaker className="w-4 h-4 text-emerald-500 group-hover:text-white" />
-                                                </div>
-                                                <div className="flex flex-col text-left">
-                                                    <span className="text-[13px] font-semibold text-gray-800 dark:text-white leading-none">Soil Health Data</span>
-                                                    <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">{showSoilAdvanced ? 'Collapse metrics' : 'Expand nutrient analysis'}</span>
-                                                </div>
-                                            </div>
-                                            {showSoilAdvanced ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
-                                        </button>
-
-                                        <AnimatePresence>
-                                            {showSoilAdvanced && (
-                                                <motion.div
-                                                    initial={{ height: 0, opacity: 0 }}
-                                                    animate={{ height: 'auto', opacity: 1 }}
-                                                    exit={{ height: 0, opacity: 0 }}
-                                                    className="overflow-hidden"
-                                                >
-                                                    <div className="grid grid-cols-3 gap-4 pb-2">
-                                                        {[
-                                                            { key: 'n', sym: 'N', label: 'Nitrogen', max: 300, unit: 'kg/ha' },
-                                                            { key: 'p', sym: 'P', label: 'Phospho', max: 150, unit: 'kg/ha' },
-                                                            { key: 'k', sym: 'K', label: 'Potass', max: 150, unit: 'kg/ha' }
-                                                        ].map((item) => {
-                                                            const percentage = (soilData[item.key] / item.max) * 100;
-                                                            const intensityColor = percentage < 33 ? 'orange' : percentage < 66 ? 'amber' : 'emerald';
-
-                                                            return (
-                                                                <div key={item.key} className="relative group/npk bg-white dark:bg-slate-900/40 p-3 md:p-4 rounded-3xl border border-gray-100 dark:border-slate-800 hover:border-emerald-500/30 transition-all shadow-sm hover:shadow-2xl hover:shadow-emerald-500/5">
-                                                                    <div className="flex flex-col gap-3">
-                                                                        <div className="flex justify-between items-start">
-                                                                            <div className={`w-9 h-9 rounded-2xl bg-${intensityColor}-500/10 dark:bg-${intensityColor}-500/20 flex items-center justify-center border border-${intensityColor}-500/20 shadow-inner transition-colors duration-500`}>
-                                                                                <span className={`text-[12px] font-bold text-${intensityColor}-600 dark:text-${intensityColor}-400`}>{item.sym}</span>
-                                                                            </div>
-                                                                            <div className="text-right">
-                                                                                <motion.span
-                                                                                    key={soilData[item.key]}
-                                                                                    initial={{ opacity: 0, y: -5 }}
-                                                                                    animate={{ opacity: 1, y: 0 }}
-                                                                                    className="text-lg font-bold text-gray-900 dark:text-white block leading-none tracking-tighter"
-                                                                                >
-                                                                                    {soilData[item.key]}
-                                                                                </motion.span>
-                                                                                <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">{item.unit}</span>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div className="space-y-2.5">
-                                                                            <div className="flex justify-between items-center text-[8px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest">
-                                                                                <span>{item.label}</span>
-                                                                                <span className="opacity-0 group-hover/npk:opacity-100 transition-opacity">Trace Active</span>
-                                                                            </div>
-                                                                            <div className="h-2 w-full bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden relative shadow-inner">
-                                                                                <motion.div
-                                                                                    className={`absolute inset-y-0 left-0 bg-gradient-to-r from-${intensityColor}-400 to-${intensityColor}-600 z-10`}
-                                                                                    initial={{ width: 0 }}
-                                                                                    animate={{ width: `${percentage}%` }}
-                                                                                    transition={{ type: "spring", stiffness: 80, damping: 15 }}
-                                                                                />
-                                                                                <motion.div
-                                                                                    className="absolute inset-y-0 w-8 bg-white/40 blur-sm z-20"
-                                                                                    animate={{ left: ['-10%', '110%'] }}
-                                                                                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                                                                                />
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                    <input
-                                                                        type="range"
-                                                                        min="0"
-                                                                        max={item.max}
-                                                                        value={soilData[item.key]}
-                                                                        onChange={(e) => setSoilData({ ...soilData, [item.key]: parseInt(e.target.value) })}
-                                                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-30"
-                                                                    />
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-                                    </div>
-
-                                    {/* Upload & Analysis Suite */}
-                                    <div className="mt-5 space-y-4">
-                                        <div className="relative group/diagnostic">
-                                            {!isCameraOpen ? (
-                                                <div
-                                                    onClick={() => !result && fileInputRef.current.click()}
-                                                    className={clsx(
-                                                        "relative rounded-2xl border-2 border-dashed h-[180px] flex flex-col items-center justify-center overflow-hidden transition-all duration-300",
-                                                        result ? "border-transparent bg-emerald-50/10" : "cursor-pointer",
-                                                        previewUrl
-                                                            ? "border-emerald-400 bg-emerald-50/20 dark:border-emerald-500/40 dark:bg-emerald-950/10"
-                                                            : "border-slate-200 bg-slate-50/80 dark:border-slate-700 dark:bg-slate-800/40 hover:border-emerald-400 hover:bg-emerald-50/40 dark:hover:border-emerald-500/50 dark:hover:bg-emerald-950/20 hover:shadow-lg hover:shadow-emerald-500/5",
-                                                    )}
-                                                >
-                                                    <input
-                                                        type="file"
-                                                        ref={fileInputRef}
-                                                        className="hidden"
-                                                        accept="image/*"
-                                                        onChange={handleImageChange}
-                                                        disabled={!!result}
-                                                    />
-
-                                                    <AnimatePresence mode='wait'>
-                                                        {previewUrl ? (
-                                                            <motion.div
-                                                                key="preview"
-                                                                initial={{ opacity: 0, scale: 0.95 }}
-                                                                animate={{ opacity: 1, scale: 1 }}
-                                                                className="relative w-full h-full p-2"
-                                                            >
-                                                                <img
-                                                                    src={previewUrl}
-                                                                    alt="Sample"
-                                                                    className="w-full h-full object-cover rounded-xl shadow-sm"
-                                                                />
-                                                                {loading && <ScanningOverlay />}
-                                                                {!result && !loading && (
-                                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/diagnostic:opacity-100 flex items-center justify-center transition-opacity rounded-xl m-2 backdrop-blur-[2px]">
-                                                                        <p className="text-white font-semibold text-xs flex items-center gap-2 bg-emerald-500/90 px-4 py-2 rounded-full shadow-lg">
-                                                                            <UploadCloud className="w-3.5 h-3.5" /> Change Image
-                                                                        </p>
-                                                                    </div>
-                                                                )}
-                                                            </motion.div>
-                                                        ) : (
-                                                            <motion.div
-                                                                key="placeholder"
-                                                                initial={{ opacity: 0 }}
-                                                                animate={{ opacity: 1 }}
-                                                                className="text-center flex flex-col items-center gap-3 px-6"
-                                                            >
-                                                                <div className="w-14 h-14 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center shadow-md border border-slate-100 dark:border-slate-700 group-hover/diagnostic:scale-110 group-hover/diagnostic:bg-emerald-500 transition-all duration-500">
-                                                                    <UploadCloud className="w-6 h-6 text-emerald-500 group-hover/diagnostic:text-white transition-colors duration-300" />
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <p className="text-sm font-semibold text-gray-700 dark:text-slate-200">Upload Leaf Image</p>
-                                                                    <p className="text-xs text-slate-400 dark:text-slate-500">Drag & drop or click to browse</p>
-                                                                </div>
-                                                            </motion.div>
-                                                        )}
-                                                    </AnimatePresence>
-
-                                                    {!result && !isCameraOpen && !previewUrl && (
-                                                        <div className="absolute bottom-4 left-0 right-0 flex justify-center pointer-events-none">
-                                                            <button
-                                                                onClick={(e) => { e.stopPropagation(); startCamera(); }}
-                                                                className="pointer-events-auto flex items-center gap-1.5 px-4 py-1.5 bg-white dark:bg-slate-800 shadow-md border border-slate-200 dark:border-slate-700 rounded-full text-slate-500 dark:text-slate-400 font-semibold text-xs hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all duration-200"
-                                                            >
-                                                                <Camera className="w-3.5 h-3.5" /> Use Camera
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                <div className="relative bg-black rounded-xl h-40 overflow-hidden flex items-center justify-center shadow-inner group">
-                                                    <video
-                                                        ref={videoRef}
-                                                        autoPlay
-                                                        playsInline
-                                                        className="w-full h-full object-cover opacity-80"
-                                                    />
-                                                    <canvas ref={canvasRef} className="hidden" />
-
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); stopCamera(); }}
-                                                        className="absolute top-3 right-3 p-1.5 bg-black/50 text-white rounded-full hover:bg-red-500 backdrop-blur-md transition-colors"
-                                                    >
-                                                        <X className="w-4 h-4" />
-                                                    </button>
-
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); capturePhoto(); }}
-                                                        className="absolute bottom-4 left-1/2 -translate-x-1/2 w-11 h-11 bg-white/20 rounded-full border-2 border-white flex items-center justify-center hover:scale-110 transition-all backdrop-blur-sm"
-                                                    >
-                                                        <div className="w-8 h-8 bg-white rounded-full shadow-lg" />
-                                                    </button>
-
-                                                    {/* Camera Scanner Line */}
-                                                    <motion.div
-                                                        className="absolute left-0 right-0 h-0.5 bg-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.8)] z-10"
-                                                        animate={{ top: ['0%', '100%'] }}
-                                                        transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {!result && !isCameraOpen && (
-                                            <button
-                                                onClick={handleAnalyze}
-                                                disabled={!selectedImage || !cropType || !state || !district || loading}
-                                                className={clsx(
-                                                    "w-full py-3.5 rounded-xl font-semibold text-[14px] flex items-center justify-center gap-2.5 transition-all duration-300 group relative overflow-hidden",
-                                                    (!selectedImage || !cropType || !state || !district)
-                                                        ? "bg-slate-100 text-slate-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-600"
-                                                        : loading
-                                                            ? "bg-emerald-500 text-white cursor-wait"
-                                                            : "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/25 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
-                                                )}
-                                            >
-                                                {loading ? (
-                                                    <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing...</>
-                                                ) : (
-                                                    <>
-                                                        <Sprout className={clsx("w-4 h-4", (!selectedImage || !cropType || !state || !district) ? "opacity-40" : "opacity-100")} />
-                                                        <span>Analyze Disease</span>
-                                                        {(!selectedImage || !cropType || !state || !district) ? null : (
-                                                            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                                                        )}
-                                                    </>
-                                                )}
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* IMAGE PREVIEW CARD (Visible after result) */}
-                            {result && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.1 }}
-                                    className="mt-6 flex flex-col gap-6"
-                                >
-                                    <div className="bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-xl border-4 border-white dark:border-slate-700 aspect-[4/3]">
-                                        <img
-                                            src={previewUrl}
-                                            alt="Analyzed Crop"
-                                            className="w-full h-full object-cover"
-                                        />
-                                    </div>
-
-                                    <button
-                                        onClick={resetForm}
-                                        className="w-full py-4 bg-white/60 dark:bg-slate-800/60 backdrop-blur-md border border-gray-100 dark:border-slate-700 rounded-2xl font-bold text-gray-600 dark:text-gray-300 flex items-center justify-center gap-2 hover:bg-white dark:hover:bg-slate-800 transition-all shadow-sm"
-                                    >
-                                        <RefreshCw className="w-5 h-5" />
-                                        {t('analyze_another') || "Analyze Another Crop"}
-                                    </button>
-                                </motion.div>
-                            )}
-
-
-                            {/* Global Loader Wrapper */}
-                            <AnimatePresence>
-                                {loading && <Loader message={t('analyzing') || "Analyzing Crop..."} />}
-                            </AnimatePresence>
+                        <div className="min-w-0">
+                            <h2 className="text-sm font-bold text-slate-800 dark:text-white leading-tight truncate">AI Plant Doctor</h2>
+                            <span className="text-[10px] text-teal-400 font-semibold uppercase tracking-widest">Crop Diagnosis</span>
                         </div>
                     </div>
+                    <button
+                        onClick={handleVoiceInput}
+                        className={clsx(
+                            "shrink-0 p-2 rounded-xl border transition-all active:scale-95",
+                            isListening
+                                ? "bg-red-500 border-red-400 text-white animate-pulse"
+                                : "bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-white"
+                        )}
+                        title="Voice Input"
+                    >
+                        <Mic className="w-4 h-4" />
+                    </button>
                 </div>
+
+                {/* ── Location Panel ── */}
+                <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-md border border-slate-200 dark:border-slate-200 dark:border-white/10 rounded-2xl p-3 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Your Location</span>
+                        <div className="flex items-center gap-1.5">
+                            <button
+                                onClick={triggerGeolocation}
+                                disabled={isLocating}
+                                className="p-1.5 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-slate-200 dark:border-white/10 rounded-lg hover:border-teal-500 hover:text-teal-600 dark:hover:text-white text-slate-500 dark:text-slate-400 transition-all disabled:opacity-50"
+                                title="Re-Sync GPS"
+                            >
+                                <RefreshCw className={clsx("w-3 h-3", isLocating && "animate-spin text-teal-400")} />
+                            </button>
+                            {isLocationLocked
+                                ? <Lock className="w-3 h-3 text-amber-500" />
+                                : <Unlock className="w-3 h-3 text-teal-400" />
+                            }
+                        </div>
+                    </div>
+
+                    {locationConfidenceLow && (
+                        <div className="bg-red-500/10 border border-red-500/20 text-rose-400 px-3 py-2 rounded-xl text-[10px] flex items-start gap-1.5 leading-normal">
+                            <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                            <span>Unable to accurately determine region automatically. Please review and adjust the fields manually.</span>
+                        </div>
+                    )}
+
+                    {isLocating ? (
+                        <div className="flex items-center gap-2 text-xs text-slate-400">
+                            <Loader2 className="w-3 h-3 animate-spin text-teal-400" />
+                            <span>Resolving GPS boundaries...</span>
+                        </div>
+                    ) : (
+                        <div className="bg-teal-50 dark:bg-teal-500/10 border border-teal-200 dark:border-teal-500/20 text-teal-700 dark:text-teal-400 px-3 py-2 rounded-xl text-xs flex flex-col gap-1 leading-normal">
+                            <div className="flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
+                                <span className="font-bold">{village || "Avarapakkam"}{taluk ? `, ${taluk}` : ''}</span>
+                            </div>
+                            <div className="text-[10px] text-teal-600 dark:text-teal-400/80 pl-3.5">
+                                {district}, {state} ({country}) - {pincode}
+                            </div>
+                            <div className="text-[9px] text-slate-500 dark:text-slate-400 pl-3.5 pt-0.5">
+                                Lat: {latitude}°, Lon: {longitude}° | Elevation: {elevation}m
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex justify-between items-center">
+                        <button
+                            type="button"
+                            onClick={() => setIsEditingLocation(!isEditingLocation)}
+                            className="text-[10px] font-bold text-teal-400 hover:text-teal-300 underline"
+                        >
+                            {isEditingLocation ? "Hide Manual Fields" : "Edit Region Details"}
+                        </button>
+                    </div>
+
+                    {isEditingLocation && (
+                        <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-100 dark:border-white/5">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                    <span className="text-[10px] font-semibold text-slate-500 uppercase">State</span>
+                                    <input
+                                        type="text"
+                                        value={state}
+                                        onChange={(e) => { setState(e.target.value); setIsLocationLocked(false); }}
+                                        onBlur={(e) => forwardGeocodeAddress({ state: e.target.value })}
+                                        className="w-full bg-slate-50 dark:bg-[#030914] border border-slate-200 dark:border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-[11px] text-slate-800 dark:text-white focus:outline-none focus:border-teal-500"
+                                        placeholder="e.g. Tamil Nadu"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <span className="text-[10px] font-semibold text-slate-500 uppercase">District</span>
+                                    <input
+                                        type="text"
+                                        value={district}
+                                        onChange={(e) => { setDistrict(e.target.value); setIsLocationLocked(false); }}
+                                        onBlur={(e) => forwardGeocodeAddress({ district: e.target.value })}
+                                        className="w-full bg-slate-50 dark:bg-[#030914] border border-slate-200 dark:border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-[11px] text-slate-800 dark:text-white focus:outline-none focus:border-teal-500"
+                                        placeholder="e.g. Viluppuram"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                    <span className="text-[10px] font-semibold text-slate-500 uppercase">Taluk / Sub-District</span>
+                                    <input
+                                        type="text"
+                                        value={taluk}
+                                        onChange={(e) => { setTaluk(e.target.value); setIsLocationLocked(false); }}
+                                        onBlur={(e) => forwardGeocodeAddress({ taluk: e.target.value })}
+                                        className="w-full bg-slate-50 dark:bg-[#030914] border border-slate-200 dark:border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-[11px] text-slate-800 dark:text-white focus:outline-none focus:border-teal-500"
+                                        placeholder="e.g. Tindivanam"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <span className="text-[10px] font-semibold text-slate-500 uppercase">Village / City</span>
+                                    <input
+                                        type="text"
+                                        value={village}
+                                        onChange={(e) => { setVillage(e.target.value); setIsLocationLocked(false); }}
+                                        onBlur={(e) => forwardGeocodeAddress({ village: e.target.value })}
+                                        className="w-full bg-slate-50 dark:bg-[#030914] border border-slate-200 dark:border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-[11px] text-slate-800 dark:text-white focus:outline-none focus:border-teal-500"
+                                        placeholder="e.g. Avarapakkam"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-2">
+                                <div className="space-y-1">
+                                    <span className="text-[9px] font-semibold text-slate-500 uppercase">Pincode</span>
+                                    <input
+                                        type="text"
+                                        value={pincode}
+                                        onChange={(e) => { setPincode(e.target.value); setIsLocationLocked(false); }}
+                                        onBlur={(e) => forwardGeocodeAddress({ pincode: e.target.value })}
+                                        className="w-full bg-slate-50 dark:bg-[#030914] border border-slate-200 dark:border-slate-200 dark:border-white/10 rounded-xl px-2 py-2 text-[11px] text-slate-800 dark:text-white focus:outline-none focus:border-teal-500"
+                                        placeholder="604001"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <span className="text-[9px] font-semibold text-slate-500 uppercase">Latitude</span>
+                                    <input
+                                        type="text"
+                                        value={latitude}
+                                        onChange={(e) => { setLatitude(e.target.value); setIsLocationLocked(false); }}
+                                        onBlur={triggerSoilEstimate}
+                                        className="w-full bg-slate-50 dark:bg-[#030914] border border-slate-200 dark:border-slate-200 dark:border-white/10 rounded-xl px-2 py-2 text-[11px] text-slate-800 dark:text-white focus:outline-none focus:border-teal-500"
+                                        placeholder="12.2234"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <span className="text-[9px] font-semibold text-slate-500 uppercase">Longitude</span>
+                                    <input
+                                        type="text"
+                                        value={longitude}
+                                        onChange={(e) => { setLongitude(e.target.value); setIsLocationLocked(false); }}
+                                        onBlur={triggerSoilEstimate}
+                                        className="w-full bg-slate-50 dark:bg-[#030914] border border-slate-200 dark:border-slate-200 dark:border-white/10 rounded-xl px-2 py-2 text-[11px] text-slate-800 dark:text-white focus:outline-none focus:border-teal-500"
+                                        placeholder="79.6455"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* AI Searchable Target Crop Field */}
+                <div className="space-y-2 relative">
+                    <div className="flex justify-between items-center">
+                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Search Crop Species</span>
+                        <HelpCircle className="w-3.5 h-3.5 text-slate-500 cursor-help" title="Fuzzy AI Search. Types queries, corrects spelling, and retrieves species classification from Gemini APIs." />
+                    </div>
+
+                    <div className="relative">
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={handleSearchChange}
+                            onKeyDown={handleSearchKeyDown}
+                            onBlur={handleSearchBlur}
+                            onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                            placeholder="Type species (e.g. Tomato, Rice)..."
+                            className="w-full bg-slate-50 dark:bg-[#030914] border border-slate-200 dark:border-slate-200 dark:border-white/10 rounded-xl pl-9 pr-3 py-3 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-teal-500 transition-all"
+                        />
+                        <Search className="w-4 h-4 text-slate-500 absolute left-3 top-3.5" />
+                    </div>
+
+                    {searchQuery.length >= 2 && (isWaitingToSearch || isSuggesting || showSuggestions) && (
+                        <div className="absolute z-20 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-200 dark:border-white/10 rounded-xl mt-1 shadow-2xl max-h-[180px] overflow-y-auto">
+                            {isWaitingToSearch ? (
+                                <div className="p-4 flex items-center justify-center gap-2 text-xs text-slate-400">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
+                                    <span>Press Enter or pause to search...</span>
+                                </div>
+                            ) : isSuggesting ? (
+                                <div className="p-4 flex items-center justify-center gap-2 text-xs text-slate-400">
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin text-teal-400" />
+                                    <span>AI correcting crop name...</span>
+                                </div>
+                            ) : suggestions.length > 0 ? (
+                                suggestions.map((crop, index) => (
+                                    <div
+                                        key={index}
+                                        onMouseDown={() => { isSelectingRef.current = true; }}
+                                        onClick={() => selectSuggestion(crop)}
+                                        className="px-4 py-2.5 hover:bg-teal-50 dark:hover:bg-teal-500/10 cursor-pointer flex justify-between items-center border-b border-slate-100 dark:border-slate-100 dark:border-white/5 last:border-b-0"
+                                    >
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-800 dark:text-white">{crop.name}</p>
+                                                <p className="text-[10px] text-slate-500 dark:text-slate-400 italic">{crop.scientific}</p>
+                                        </div>
+                                        <span className="text-[8px] bg-teal-500/10 text-teal-400 border border-teal-500/20 px-1.5 py-0.5 rounded font-bold uppercase">
+                                            {crop.category}
+                                        </span>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="p-4 text-xs text-slate-500 text-center">No AI suggestions found for query.</div>
+                            )}
+                        </div>
+                    )}
+
+                    {cropType && (
+                        <div className="bg-slate-50 dark:bg-slate-50 dark:bg-[#050C16] border border-slate-200 dark:border-slate-100 dark:border-white/5 rounded-xl p-3 mt-2 flex justify-between items-center">
+                            <div>
+                                <span className="text-[9px] font-extrabold text-teal-400 uppercase tracking-widest block">Active Target</span>
+                                <h4 className="text-xs font-bold text-slate-800 dark:text-white">{cropType} <span className="text-[10px] text-slate-500 dark:text-slate-400 italic">({scientificName || 'Custom'})</span></h4>
+                            </div>
+                            <button onClick={() => { setCropType(''); setSearchQuery(''); setScientificName(''); }} className="text-slate-400 hover:text-white">
+                                <X className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+
+
+                {/* Gateway Upload Box */}
+                <div className="space-y-3">
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Specimen Upload Gateway</label>
+                    
+                    {!isCameraOpen ? (
+                        <div className="space-y-3">
+                            <div 
+                                onClick={() => !loading && fileInputRef.current.click()}
+                                className="relative border-2 border-dashed rounded-3xl h-[160px] border-slate-200 dark:border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#030914] hover:bg-slate-100 dark:hover:bg-slate-800/20 hover:border-teal-500/50 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 overflow-hidden"
+                            >
+                                <input 
+                                    type="file" 
+                                    ref={fileInputRef} 
+                                    className="hidden" 
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                />
+
+                                <AnimatePresence mode="wait">
+                                    {previewUrl ? (
+                                        <div className="relative w-full h-full p-2">
+                                            <img src={previewUrl} className="w-full h-full object-cover rounded-2xl" alt="Preview" />
+                                            {loading && (
+                                                <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center gap-3 p-4 text-center">
+                                                    <Loader2 className="w-8 h-8 text-teal-400 animate-spin" />
+                                                    <p className="text-xs font-bold text-teal-400 uppercase tracking-wider animate-pulse">Running Neural Analysis...</p>
+                                                    <p className="text-[10px] text-slate-400">{PIPELINE_STAGES[pipelineStage - 1]?.text || 'Processing specimen data...'}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center p-6 space-y-3 flex flex-col items-center">
+                                            <div className="p-3.5 bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10">
+                                                <UploadCloud className="w-6 h-6 text-teal-400" />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold text-slate-800 dark:text-white">Upload Crop Leaf Image</p>
+                                                <p className="text-[10px] text-slate-500 mt-1">Tap to browse files</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+
+                            {!previewUrl && (
+                                <button
+                                    type="button"
+                                    onClick={startCamera}
+                                    className="w-full bg-slate-100 dark:bg-slate-100 dark:bg-[#0A1628] hover:bg-slate-200 dark:hover:bg-slate-800/40 border border-slate-200 dark:border-slate-200 dark:border-white/10 rounded-2xl py-3 text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center justify-center gap-2 transition-all"
+                                >
+                                    <Camera className="w-4 h-4 text-teal-400" />
+                                    Open Live Camera Scanner
+                                </button>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="relative rounded-3xl h-[210px] bg-black overflow-hidden flex items-center justify-center">
+                            <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                            <canvas ref={canvasRef} className="hidden" />
+
+                            <button
+                                type="button"
+                                onClick={stopCamera}
+                                className="absolute top-3 right-3 p-2 bg-black/70 rounded-full text-white hover:bg-red-500 transition-colors"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={capturePhoto}
+                                className="absolute bottom-4 w-12 h-12 bg-white/20 rounded-full border-2 border-white flex items-center justify-center"
+                            >
+                                <div className="w-9 h-9 bg-white rounded-full" />
+                            </button>
+
+                            <motion.div
+                                className="absolute left-0 right-0 h-0.5 bg-teal-400 shadow-[0_0_12px_rgba(20,184,166,0.8)]"
+                                animate={{ top: ['0%', '100%'] }}
+                                transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                            />
+                        </div>
+                    )}
+                </div>
+
+                {confidenceMode === 'low_confidence' && cropType && (
+                    <button
+                        type="button"
+                        onClick={triggerManualDiagnostics}
+                        disabled={loading}
+                        className="w-full py-4 rounded-2xl font-bold text-xs uppercase tracking-widest bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white shadow-lg active:scale-95 flex items-center justify-center gap-2"
+                    >
+                        <Sprout className="w-4 h-4" />
+                        Run Diagnostics manually
+                    </button>
+                )}
             </div>
 
-            {/* RIGHT COLUMN: RESULT SECTION */}
-            <div ref={resultRef} className="flex-1 w-full min-w-0 scroll-mt-28">
-                <AnimatePresence mode='wait'>
-                    {translatedResult ? (
-                        <div className="flex flex-col gap-6 w-full mx-auto">
-                            {/* TOP: Detection Card (Dynamic Condition Identity) */}
+            {/* ==================== 2. MAIN CONTENT CANVAS ==================== */}
+            <div 
+                style={mainContentStyle} 
+                className="flex-1 flex flex-col gap-6"
+            >
+                <AnimatePresence mode="wait">
+                    
+                    {/* A. Dynamic Moderate Confidence Verification Interface */}
+                    {confidenceMode === 'confirm' && pendingAnalysis && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.98 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.98 }}
+                            className="bg-white/80 dark:bg-[#0B1528]/80 backdrop-blur-lg border border-slate-200 dark:border-slate-200 dark:border-white/10 rounded-3xl p-6 flex flex-col items-center justify-center text-center gap-6 shadow-2xl flex-1"
+                        >
+                            <div className="p-4 bg-amber-500/10 text-amber-400 rounded-full border border-amber-500/20">
+                                <HelpCircle className="w-10 h-10 animate-bounce" />
+                            </div>
+                            <div className="space-y-2">
+                                <span className="text-[10px] font-extrabold text-amber-400 uppercase tracking-widest bg-amber-500/10 px-3 py-1 rounded-full">Species Verification Required</span>
+                                <h3 className="text-xl font-extrabold text-slate-800 dark:text-white mt-2">Is this specimen a {pendingAnalysis.diseaseAnalysis.crop}?</h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md leading-relaxed">
+                                    AI detected {pendingAnalysis.diseaseAnalysis.crop} ({pendingAnalysis.diseaseAnalysis.scientificName}) with {pendingAnalysis.diseaseAnalysis.confidence}% confidence. Please confirm to unlock advisory rules.
+                                </p>
+                            </div>
+                            <div className="flex gap-4 w-full max-w-xs">
+                                <button
+                                    onClick={acceptPendingResult}
+                                    className="flex-1 py-3 bg-teal-500 hover:bg-teal-400 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-all"
+                                >
+                                    Yes, Correct
+                                </button>
+                                <button
+                                    onClick={rejectPendingResult}
+                                    className="flex-1 py-3 bg-white/5 hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-300 font-bold rounded-xl text-xs uppercase tracking-wider transition-all"
+                                >
+                                    No, Let me Search
+                                </button>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {/* B. Low Confidence Fallback Selector Interface */}
+                    {confidenceMode === 'low_confidence' && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.98 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="bg-white/80 dark:bg-[#0B1528]/80 backdrop-blur-lg border border-slate-200 dark:border-slate-200 dark:border-white/10 rounded-3xl p-6 flex flex-col items-center justify-center text-center gap-6 shadow-2xl flex-1"
+                        >
+                            <div className="p-4 bg-red-500/10 text-red-400 rounded-full border border-red-500/20">
+                                <AlertCircle className="w-10 h-10 animate-pulse" />
+                            </div>
+                            <div className="space-y-2">
+                                <span className="text-[10px] font-extrabold text-red-400 uppercase tracking-widest bg-red-500/10 px-3 py-1 rounded-full">Unable to confidently identify crop</span>
+                                <h3 className="text-xl font-extrabold text-slate-800 dark:text-white mt-2">Species Auto-Fill Failed</h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md leading-relaxed">
+                                    Our vision filters detected botanical tissue but cannot determine the exact crop clearly. Please use the search bar in the left sidebar to manually specify the target crop name.
+                                </p>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {/* C. Complete Diagnostic Results Output */}
+                    {txResult && confidenceMode === 'none' ? (
+                        <div ref={resultRef} className="w-full flex flex-col gap-6">
+                            
+                            {/* 1. Crop Overview & Disease Analysis (Premium Banner Header) */}
                             <motion.div
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
+                                initial={{ opacity: 0, y: 15 }}
+                                animate={{ opacity: 1, y: 0 }}
                                 className={clsx(
-                                    "w-full mx-auto rounded-2xl md:rounded-2xl p-5 md:p-7 shadow-2xl relative overflow-hidden flex flex-col md:flex-row justify-between items-center gap-6 border border-white/20",
-                                    translatedResult.isLowConfidence
-                                        ? "bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-amber-500/20"
-                                        : translatedResult.diseaseName.toLowerCase().includes('healthy')
-                                            ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-emerald-500/20"
-                                            : "bg-gradient-to-br from-rose-500 to-red-700 text-white shadow-red-500/20"
+                                    "rounded-3xl p-6 border relative overflow-hidden flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 shadow-xl",
+                                    txResult.isHealthy
+                                        ? "bg-gradient-to-r from-[#06241a] to-[#0c3c2e] border-emerald-500/30 text-emerald-400"
+                                        : txResult.severityPercentage > 60
+                                            ? "bg-gradient-to-r from-[#340b13] to-[#54121b] border-red-500/30 text-rose-400"
+                                            : "bg-gradient-to-r from-[#2c1305] to-[#421b06] border-orange-500/30 text-amber-400"
                                 )}
                             >
-                                {/* Pattern Overlay */}
-                                <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(circle_at_2px_2px,rgba(255,255,255,0.3)_1px,transparent_0)] bg-[size:24px_24px]" />
-
-                                <div className="relative z-10 flex flex-col gap-1">
-                                    <div className="flex items-center gap-2">
-                                        <div className="px-3 py-0.5 bg-white/20 backdrop-blur-md rounded-full border border-white/30">
-                                            <p className="text-[9px] font-bold tracking-wide text-white">
-                                                {translatedResult.isLowConfidence ? "Preliminary Diagnostic" : "Confirmed Analysis"}
-                                            </p>
+                                <div className="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(circle_at_2px_2px,rgba(255,255,255,0.2)_1px,transparent_0)] bg-[size:16px_16px]" />
+                                
+                                <div className="space-y-2 relative z-10 flex-1 w-full">
+                                    <div className="flex gap-2 items-center flex-wrap">
+                                        <span className="px-3 py-0.5 bg-white/10 rounded-full text-[10px] font-bold uppercase tracking-wider border border-slate-200 dark:border-white/10">
+                                            {txResult.isHealthy ? "Verified Healthy" : "Infection Spotted"}
+                                        </span>
+                                        <span className="px-2.5 py-0.5 bg-teal-500/20 text-teal-400 border border-teal-500/30 rounded-full text-[9px] font-bold uppercase">
+                                            {result.diseaseAnalysis?.crop} ({result.diseaseAnalysis?.scientificName})
+                                        </span>
+                                        <span className="px-2 py-0.5 bg-slate-800 text-slate-300 rounded text-[9px] font-extrabold uppercase">
+                                            {result.diseaseAnalysis?.category}
+                                        </span>
+                                    </div>
+                                    <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold leading-tight tracking-tight text-white animate-fade-in">
+                                        {txResult.diseaseName}
+                                    </h2>
+                                    
+                                    <div className="w-full space-y-1.5 pt-2 max-w-lg">
+                                        <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider">
+                                            <span className="opacity-70">Damage Spread Severity</span>
+                                            <span>{txResult.isHealthy ? "0%" : `${txResult.severityPercentage}%`}</span>
                                         </div>
-                                        {translatedResult.isLowConfidence && (
-                                            <span className="px-3 py-0.5 bg-white text-amber-600 text-[8px] font-bold rounded-full uppercase tracking-tighter flex items-center gap-1 shadow-lg">
-                                                <AlertCircle className="w-2.5 h-2.5" /> Manual Verification Advised
-                                            </span>
-                                        )}
+                                        <div className="h-2 w-full bg-black/45 rounded-full overflow-hidden p-[1px] border border-slate-100 dark:border-white/5">
+                                            <motion.div
+                                                initial={{ width: 0 }}
+                                                animate={{ width: txResult.isHealthy ? "0%" : `${txResult.severityPercentage}%` }}
+                                                transition={{ duration: 1.5, ease: "easeOut" }}
+                                                className={clsx(
+                                                    "h-full rounded-full bg-gradient-to-r",
+                                                    txResult.isHealthy 
+                                                        ? "from-emerald-400 to-teal-400" 
+                                                        : txResult.severityPercentage > 60 
+                                                            ? "from-rose-500 to-red-500" 
+                                                            : "from-amber-400 to-orange-500"
+                                                )}
+                                            />
+                                        </div>
                                     </div>
-                                    <h3 className="text-xl sm:text-3xl md:text-5xl font-bold leading-tight tracking-tighter drop-shadow-md">
-                                        {translatedResult.diseaseName}
-                                    </h3>
                                 </div>
-                                <div className="text-center md:text-right relative z-10 shrink-0 bg-white/10 backdrop-blur-xl p-4 md:p-5 rounded-xl border border-white/20 min-w-[140px] md:min-w-[160px]">
-                                    <div className="text-3xl md:text-6xl font-bold leading-none mb-1 tracking-tighter">
-                                        {Number(translatedResult.confidence || 0).toFixed(2)}<span className="text-lg md:text-xl ml-0.5 opacity-60">%</span>
-                                    </div>
-                                    <p className="text-[8px] md:text-[9px] font-bold tracking-wider uppercase opacity-80">Confidence Index</p>
+
+                                <div className="flex flex-col gap-1 items-end relative z-10 shrink-0 bg-slate-100 dark:bg-black/35 backdrop-blur-md p-4 rounded-2xl border border-slate-200 dark:border-white/10 min-w-[130px] text-right">
+                                    <span className="text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-none">
+                                        {Number(txResult.confidence).toFixed(2)}<span className="text-xs font-semibold opacity-60 ml-0.5">%</span>
+                                    </span>
+                                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Confidence Score</span>
                                 </div>
-                                {/* Decorative Orbs */}
-                                <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-white/20 rounded-full blur-3xl" />
-                                <div className="absolute -right-10 -top-10 w-48 h-48 bg-black/10 rounded-full blur-3xl" />
                             </motion.div>
 
-                            {/* BOTTOM: Smart Recommendation Card */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.1 }}
-                                className="bg-white dark:bg-slate-900/80 backdrop-blur-2xl rounded-2xl md:rounded-2xl p-4 md:p-10 shadow-2xl border border-gray-100 dark:border-white/5 relative overflow-hidden"
-                            >
-                                {/* Subtle Background Glass Pattern */}
-                                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[120px] -mr-48 -mt-48" />
-
-                                {/* NEW: Systematic Feedback Box */}
-                                {translatedResult.message && translatedResult.message !== 'Success' && (
-                                    <div className={clsx(
-                                        "mb-6 md:mb-10 p-4 md:p-6 rounded-2xl md:rounded-3xl border-2 flex gap-4 md:gap-5 items-center backdrop-blur-md shadow-inner",
-                                        translatedResult.isLowConfidence
-                                            ? "bg-amber-500/10 border-amber-500/20 text-amber-900 dark:text-amber-100"
-                                            : "bg-emerald-500/10 border-emerald-500/20 text-emerald-900 dark:text-emerald-100"
-                                    )}>
-                                        <div className={clsx("p-3 rounded-2xl", translatedResult.isLowConfidence ? "bg-amber-500 text-white" : "bg-emerald-500 text-white")}>
-                                            <AlertCircle className="w-6 h-6 shrink-0" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <h4 className="text-[10px] font-bold tracking-wider uppercase opacity-60">Sequence Diagnostic Note</h4>
-                                            <p className="text-base font-bold leading-relaxed">{translatedResult.message}</p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-8 md:mb-12 gap-4 md:gap-6 relative z-10">
-                                    <div className="flex items-center gap-4 md:gap-5">
-                                        <div className="relative">
-                                            <div className="absolute inset-0 bg-emerald-500 rounded-3xl blur-lg opacity-20 animate-pulse" />
-                                            <div className="p-3 md:p-4 bg-emerald-500 text-white rounded-2xl md:rounded-3xl relative z-10 shadow-xl shadow-emerald-500/20">
-                                                <Sprout className="w-6 h-6 md:w-8 md:h-8" />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <h3 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight leading-none mb-1">Cure Protocol</h3>
-                                            <p className="text-[12px] font-medium text-slate-400">Precision Recommendation AI</p>
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        onClick={() => isSpeaking ? stopSpeaking() : speakResult(`${translatedResult.diseaseName}. ${translatedResult.instructions}`)}
-                                        className={clsx(
-                                            "group flex items-center gap-3 px-5 py-3 md:px-8 md:py-4 rounded-xl md:rounded-2xl font-bold text-[10px] md:text-[11px] uppercase tracking-widest transition-all shadow-xl hover:scale-[1.02] active:scale-[0.98]",
-                                            isSpeaking
-                                                ? "bg-rose-500 text-white shadow-rose-500/25 animate-pulse"
-                                                : "bg-white dark:bg-slate-800 text-gray-900 dark:text-white border border-gray-100 dark:border-white/10 hover:shadow-emerald-500/10"
-                                        )}
-                                    >
-                                        <div className={clsx("p-1.5 rounded-lg", isSpeaking ? "bg-white/20" : "bg-emerald-500")}>
-                                            {isSpeaking ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-white" />}
-                                        </div>
-                                        {isSpeaking ? "Speaking" : "Listen"}
-                                    </button>
-                                </div>
-
-                                {/* NEW: Top Predictions Breakdown (If low confidence) */}
-                                {translatedResult.isLowConfidence && translatedResult.topPredictions && (
-                                    <div className="mb-8 md:mb-12 p-5 md:p-8 bg-gray-50/50 dark:bg-white/5 rounded-3xl md:rounded-2xl border border-gray-100 dark:border-white/10 shadow-inner">
-                                        <div className="flex items-center gap-3 mb-6">
-                                            <div className="w-2 h-2 bg-amber-500 rounded-full animate-ping" />
-                                            <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 tracking-wider uppercase">Genetic Possibility Matrix</span>
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                            {translatedResult.topPredictions.slice(0, 3).map((pred, idx) => (
-                                                <div key={idx} className="space-y-3 p-5 bg-white dark:bg-slate-900/50 rounded-2xl border border-gray-200/50 dark:border-white/5 shadow-sm">
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-[12px] font-bold text-gray-900 dark:text-white uppercase tracking-tight truncate pr-2">{pred.disease.replace(/_/g, ' ')}</span>
-                                                        <span className="text-[12px] font-bold text-amber-500">{pred.confidence}%</span>
-                                                    </div>
-                                                    <div className="h-1.5 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                                        <motion.div
-                                                            initial={{ width: 0 }}
-                                                            animate={{ width: `${pred.confidence}%` }}
-                                                            className={clsx(
-                                                                "h-full rounded-full transition-all duration-1000",
-                                                                idx === 0 ? "bg-amber-500" : "bg-gray-400"
-                                                            )}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 mb-8 md:mb-12">
-                                    <div className="relative group overflow-hidden">
-                                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent dark:from-emerald-500/10 pointer-events-none" />
-                                        <div className="relative p-5 md:p-8 bg-white dark:bg-slate-800 border-2 border-emerald-500/20 dark:border-emerald-500/30 rounded-2xl md:rounded-2xl shadow-xl group-hover:border-emerald-500/50 transition-colors">
-                                            <div className="w-10 h-10 md:w-12 md:h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center mb-4">
-                                                <Beaker className="w-5 h-5 md:w-6 md:h-6 text-emerald-500" />
-                                            </div>
-                                            <p className="text-[9px] md:text-[10px] font-bold text-emerald-600/60 dark:text-emerald-400/60 tracking-wider uppercase mb-2 font-bold">Treatment Sequence</p>
-                                            <p className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white leading-tight">
-                                                {translatedResult.fertilizer}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="relative group overflow-hidden">
-                                        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent dark:from-blue-500/10 pointer-events-none" />
-                                        <div className="relative p-5 md:p-8 bg-white dark:bg-slate-800 border-2 border-blue-500/20 dark:border-blue-500/30 rounded-2xl md:rounded-2xl shadow-xl group-hover:border-blue-500/50 transition-colors">
-                                            <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-4">
-                                                <Tractor className="w-5 h-5 md:w-6 md:h-6 text-blue-500" />
-                                            </div>
-                                            <p className="text-[9px] md:text-[10px] font-bold text-blue-600/60 dark:text-blue-400/60 tracking-wider uppercase mb-2 font-bold">Volume Metric</p>
-                                            <p className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white leading-tight">
-                                                {translatedResult.dosage}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* TREATMENT ROADMAP */}
-                                <div className="relative">
-                                    <div className="flex items-center justify-between mb-8">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-purple-500/10 rounded-xl">
-                                                <ScanLine className="w-5 h-5 text-purple-500" />
-                                            </div>
-                                            <span className="text-[11px] font-bold text-gray-400 tracking-wider uppercase">Biological Recovery Timeline</span>
-                                        </div>
-                                        <div className="h-[1px] flex-1 mx-6 bg-gradient-to-r from-gray-100 to-transparent dark:from-white/10" />
-                                    </div>
-
-                                    <div className="grid grid-cols-1 gap-6 relative">
-                                        {[
-                                            { day: 'Day 1', label: 'PHASE 01: INITIAL INTERVENTION', color: 'emerald', text: translatedResult.fertilizer + ' application precisely at ' + translatedResult.dosage, desc: 'Stabilize leaf tissue and neutralize pathogens.' },
-                                            { day: 'Day 3', label: 'PHASE 02: RECOVERY MONITORING', color: 'blue', text: 'Monitor for yellowing or systemic spread. Verify hydration.', desc: 'Check if new growth shows signs of health.' },
-                                            { day: 'Day 7', label: 'PHASE 03: DIAGNOSTIC RE-SCAN', color: 'purple', text: 'Initiate a secondary scan to verify recovery vector.', desc: 'Final validation before clearing the crop.' }
-                                        ].map((step, idx) => (
-                                            <motion.div
-                                                key={idx}
-                                                whileHover={{ x: 10 }}
-                                                className="relative group bg-gray-50/50 dark:bg-white/5 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-100 dark:border-white/5 flex flex-col md:flex-row gap-4 md:gap-6 items-start md:items-center hover:bg-white dark:hover:bg-white/10 transition-all shadow-sm group"
-                                            >
-                                                <div className={clsx(
-                                                    "shrink-0 w-12 h-12 md:w-16 md:h-16 rounded-2xl flex flex-col items-center justify-center shadow-lg",
-                                                    idx === 0 ? "bg-emerald-500 text-white shadow-emerald-500/20" : idx === 1 ? "bg-blue-500 text-white shadow-blue-500/20" : "bg-purple-500 text-white shadow-purple-500/20"
-                                                )}>
-                                                    <span className="text-[10px] md:text-xs font-bold tracking-tighter uppercase">{step.day.split(' ')[0]}</span>
-                                                    <span className="text-lg md:text-xl font-bold leading-none">{step.day.split(' ')[1]}</span>
-                                                </div>
-                                                <div className="flex-1 space-y-2">
-                                                    <div className="flex items-center gap-3">
-                                                        <span className={clsx(
-                                                            "text-[9px] md:text-[10px] font-bold tracking-widest",
-                                                            idx === 0 ? "text-emerald-600" : idx === 1 ? "text-blue-600" : "text-purple-600"
-                                                        )}>{step.label}</span>
-                                                        <div className="h-1 flex-1 bg-gray-100 dark:bg-slate-800 rounded-full" />
-                                                    </div>
-                                                    <p className="text-xs md:text-sm font-bold text-gray-900 dark:text-white leading-tight">{step.text}</p>
-                                                    <p className="text-[10px] md:text-[11px] font-bold text-gray-400 dark:text-slate-500 uppercase italic">{step.desc}</p>
-                                                </div>
-                                                <div className="hidden md:block opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <div className={clsx(
-                                                        "p-2 rounded-xl bg-white dark:bg-slate-800 shadow-xl",
-                                                        idx === 0 ? "text-emerald-500" : idx === 1 ? "text-blue-500" : "text-purple-500"
-                                                    )}>
-                                                        <Check className="w-5 h-5" />
-                                                    </div>
-                                                </div>
-                                            </motion.div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="mt-6 md:mt-12 p-5 md:p-8 bg-emerald-500 text-white rounded-2xl md:rounded-2xl shadow-2xl shadow-emerald-500/20 relative overflow-hidden group">
-                                    <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.1)_50%,transparent_75%)] bg-[size:250%_250%] animate-[shimmer_3s_infinite_linear]" />
-                                    <div className="relative z-10 flex gap-4 items-start">
-                                        <div className="p-2 bg-white/20 rounded-xl">
+                            {/* 2. AI recommendations & Prescriptions (Cure Methods, Organic Alternatives, Yield Protection) */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="bg-slate-50 dark:bg-[#050C16] border border-slate-200 dark:border-white/10 p-5 rounded-3xl flex flex-col gap-4 shadow-lg">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-2 bg-teal-500/10 rounded-xl text-teal-400">
                                             <Activity className="w-5 h-5" />
                                         </div>
                                         <div>
-                                            <h4 className="text-[10px] md:text-[11px] font-bold tracking-wider uppercase opacity-80 mb-2">Expert Clinical Commentary</h4>
-                                            <p className="text-base md:text-lg font-bold leading-snug italic">"{translatedResult.instructions}"</p>
+                                            <h3 className="text-sm font-bold text-slate-800 dark:text-white">Cure Methods</h3>
+                                            <span className="text-[8px] font-extrabold uppercase tracking-widest text-slate-500">Chemical / Technical</span>
                                         </div>
+                                    </div>
+                                    <hr className="border-slate-100 dark:border-white/5" />
+                                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium flex-1">
+                                        {txResult.cureMethods}
+                                    </p>
+                                </div>
+
+                                <div className="bg-slate-50 dark:bg-[#050C16] border border-slate-200 dark:border-white/10 p-5 rounded-3xl flex flex-col gap-4 shadow-lg">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-400">
+                                            <Leaf className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-bold text-slate-800 dark:text-white">Organic Solutions</h3>
+                                            <span className="text-[8px] font-extrabold uppercase tracking-widest text-slate-500">Biological & Natural</span>
+                                        </div>
+                                    </div>
+                                    <hr className="border-slate-100 dark:border-white/5" />
+                                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium flex-1">
+                                        {txResult.organicSolutions}
+                                    </p>
+                                </div>
+
+                                <div className="bg-slate-50 dark:bg-[#050C16] border border-slate-200 dark:border-white/10 p-5 rounded-3xl flex flex-col gap-4 shadow-lg">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-2 bg-amber-500/10 rounded-xl text-amber-400">
+                                            <ShieldCheck className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-bold text-slate-800 dark:text-white">Yield Protection Advice</h3>
+                                            <span className="text-[8px] font-extrabold uppercase tracking-widest text-slate-500">Mitigate Crop Losses</span>
+                                        </div>
+                                    </div>
+                                    <hr className="border-slate-100 dark:border-white/5" />
+                                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium flex-1">
+                                        {txResult.yieldProtectionAdvice}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* 3. Soil Intelligence, Fertilizer Guidance & Irrigation Advice */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="bg-slate-50 dark:bg-[#050C16] border border-slate-200 dark:border-white/10 p-5 rounded-3xl flex flex-col gap-4 shadow-lg">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-2 bg-blue-500/10 rounded-xl text-blue-400">
+                                            <Beaker className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-bold text-slate-800 dark:text-white">Soil Intelligence</h3>
+                                            <span className="text-[8px] font-extrabold uppercase tracking-widest text-slate-500">Structure & Conditioning</span>
+                                        </div>
+                                    </div>
+                                    <hr className="border-slate-100 dark:border-white/5" />
+                                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium flex-1">
+                                        {txResult.soilRecommendations}
+                                    </p>
+                                </div>
+
+                                <div className="bg-slate-50 dark:bg-[#050C16] border border-slate-200 dark:border-white/10 p-5 rounded-3xl flex flex-col gap-4 shadow-lg">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-2 bg-purple-500/10 rounded-xl text-purple-400">
+                                            <Tractor className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-bold text-slate-800 dark:text-white">Fertilizer Guidance</h3>
+                                            <span className="text-[8px] font-extrabold uppercase tracking-widest text-slate-500">Mineral & NPK Balance</span>
+                                        </div>
+                                    </div>
+                                    <hr className="border-slate-100 dark:border-white/5" />
+                                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium flex-1">
+                                        {txResult.fertilizerSuggestions}
+                                    </p>
+                                    <div className="bg-slate-100 dark:bg-black/35 border border-slate-100 dark:border-white/5 rounded-xl p-2.5 text-[10px] text-slate-400">
+                                        Active chemical dosage: <strong>{txResult.dosage}</strong> of <strong>{txResult.fertilizer}</strong>
                                     </div>
                                 </div>
 
-                                {/* Mobile Only: Quick Reset Action */}
-                                <div className="md:hidden mt-6">
-                                    <button
-                                        onClick={() => {
-                                            resetForm();
-                                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                                        }}
-                                        className="w-full py-4 bg-white dark:bg-slate-800 rounded-2xl font-bold text-gray-600 dark:text-gray-300 flex items-center justify-center gap-2 shadow-lg border border-gray-100 dark:border-slate-700 active:scale-95 transition-all"
-                                    >
-                                        <RefreshCw className="w-5 h-5" />
-                                        {t('analyze_another') || "Analyze Another Crop"}
-                                    </button>
+                                <div className="bg-slate-50 dark:bg-[#050C16] border border-slate-200 dark:border-white/10 p-5 rounded-3xl flex flex-col gap-4 shadow-lg">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-2 bg-cyan-500/10 rounded-xl text-cyan-400">
+                                            <Compass className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-bold text-slate-800 dark:text-white">Irrigation Advice</h3>
+                                            <span className="text-[8px] font-extrabold uppercase tracking-widest text-slate-500">Hydration & Spore Control</span>
+                                        </div>
+                                    </div>
+                                    <hr className="border-slate-100 dark:border-white/5" />
+                                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium flex-1">
+                                        {txResult.irrigationAdvice}
+                                    </p>
                                 </div>
-                            </motion.div>
-                        </div>
-                    ) : (
-                        // Empty State / Placeholder with Features
-                        <motion.div
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className="h-full w-full mx-auto bg-white dark:bg-slate-900 rounded-2xl p-6 md:p-8 border border-slate-200/70 dark:border-slate-700/70 shadow-[0_2px_20px_rgba(0,0,0,0.05)] relative overflow-hidden"
-                        >
-                            {/* Subtle top gradient accent */}
-                            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-emerald-400 via-teal-400 to-blue-400 rounded-t-2xl" />
-                            <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-400/5 rounded-full blur-3xl pointer-events-none" />
-                            <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-blue-400/5 rounded-full blur-3xl pointer-events-none" />
+                            </div>
 
-                            <div className="relative z-10 flex flex-col h-full">
-                                <div className="flex items-center justify-between mb-7">
-                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                                        <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-teal-500 text-white rounded-xl shadow-lg shadow-emerald-500/25">
-                                            <ThermometerSun className="w-5 h-5" />
+                            {/* 4. Environmental Risk Meter & Weather Insights */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="bg-slate-50 dark:bg-[#050C16] border border-slate-200 dark:border-white/10 p-5 rounded-3xl flex flex-col gap-4 shadow-lg relative overflow-hidden">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-2 bg-rose-500/10 rounded-xl text-rose-400">
+                                            <AlertTriangle className="w-5 h-5" />
                                         </div>
-                                        <div className="flex flex-col">
-                                            <span className="leading-tight">{t('insight_title')}</span>
-                                            <div className="flex items-center gap-1.5 mt-0.5">
-                                                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
-                                                <span className="text-[11px] font-semibold text-emerald-500">Live System Active</span>
-                                            </div>
+                                        <div>
+                                            <h3 className="text-sm font-bold text-slate-800 dark:text-white">Risk Meter & Spread Risk</h3>
+                                            <span className="text-[8px] font-extrabold uppercase tracking-widest text-slate-500">Disease Spread Vector</span>
                                         </div>
-                                    </h3>
-                                </div>
-
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5 mb-6">
-                                    {/* WEATHER WIDGET */}
-                                    <motion.div
-                                        whileHover={{ y: -3, boxShadow: '0 12px 24px -8px rgba(59,130,246,0.15)' }}
-                                        className="relative bg-white dark:bg-slate-800/80 p-5 rounded-2xl border border-slate-100 dark:border-slate-700/60 shadow-sm overflow-hidden transition-all duration-200"
-                                    >
-                                        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-400 to-sky-400 rounded-t-2xl" />
-                                        <div className="flex justify-between items-start mb-5">
-                                            <div>
-                                                <p className="text-xs font-semibold text-blue-500 tracking-wide uppercase mb-1">{t('weather')}</p>
-                                                <h4 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">28°C</h4>
-                                            </div>
-                                            <div className="p-2.5 bg-blue-50 dark:bg-blue-900/30 rounded-xl">
-                                                <CloudSun className="w-7 h-7 text-blue-500" />
-                                            </div>
+                                    </div>
+                                    <hr className="border-slate-100 dark:border-white/5" />
+                                    
+                                    <div className="flex items-center justify-between gap-4">
+                                        <div className="space-y-1.5 flex-1">
+                                            <span className="text-[10px] font-extrabold text-slate-400 uppercase block">Sporulation Risk Level</span>
+                                            <span className={clsx(
+                                                "text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider inline-block",
+                                                txResult.isHighSpreadRisk ? "bg-red-500/20 border border-red-500/30 text-rose-400" : "bg-emerald-500/20 border border-emerald-500/30 text-emerald-400"
+                                            )}>
+                                                {txResult.isHighSpreadRisk ? "⚠️ High Risk" : "✓ Low Risk"}
+                                            </span>
+                                            <p className="text-[10px] text-slate-400 mt-2">
+                                                Based on localized weather humidity matrix. Spore growth accelerates exponentially in high-moisture air.
+                                            </p>
                                         </div>
 
-                                        <div className="flex items-center gap-3 mb-5">
-                                            <div className="flex items-center gap-1.5 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">
-                                                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                                                <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">Spray Optimal</span>
-                                            </div>
-                                            <span className="text-xs font-medium text-slate-400">Partly Cloudy</span>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100 dark:border-slate-700/50">
-                                            <div className="flex items-center gap-2.5">
-                                                <div className="p-1.5 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                                    <RefreshCw className="w-3.5 h-3.5 text-blue-400" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Humidity</p>
-                                                    <p className="text-sm font-bold text-gray-700 dark:text-slate-200">64%</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2.5">
-                                                <div className="p-1.5 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                                    <CloudSun className="w-3.5 h-3.5 text-orange-400" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Wind</p>
-                                                    <p className="text-sm font-bold text-gray-700 dark:text-slate-200">12 km/h</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </motion.div>
-
-                                    {/* MARKET WIDGET */}
-                                    <motion.div
-                                        whileHover={{ y: -3, boxShadow: '0 12px 24px -8px rgba(16,185,129,0.15)' }}
-                                        className="relative bg-white dark:bg-slate-800/80 p-5 rounded-2xl border border-slate-100 dark:border-slate-700/60 shadow-sm overflow-hidden transition-all duration-200"
-                                    >
-                                        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-t-2xl" />
-                                        <div className="flex justify-between items-start mb-5">
-                                            <div>
-                                                <p className="text-xs font-semibold text-emerald-500 tracking-wide uppercase mb-1">Market Price</p>
-                                                <h4 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">₹2,450</h4>
-                                            </div>
-                                            <div className="p-2.5 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl">
-                                                <IndianRupee className="w-7 h-7 text-emerald-500" />
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center gap-3 mb-5">
-                                            <div className="flex items-center gap-1.5 bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-[11px] font-semibold shadow-sm">
-                                                <span>▲</span> +4.2%
-                                            </div>
-                                            <span className="text-xs font-medium text-slate-400">{t('insight_per_quintal')}</span>
-                                        </div>
-
-                                        {/* Sparkline */}
-                                        <div className="absolute bottom-0 left-0 right-0 h-14 opacity-15 pointer-events-none">
-                                            <svg className="w-full h-full" preserveAspectRatio="none">
-                                                <path
-                                                    d="M0 60 Q 50 10, 100 40 T 200 20 T 300 50 T 400 30"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    strokeWidth="3"
-                                                    className="text-emerald-500"
+                                        <div className="relative w-20 h-20 flex items-center justify-center shrink-0">
+                                            <svg className="w-full h-full transform -rotate-90">
+                                                <circle cx="40" cy="40" r="32" className="stroke-slate-800" strokeWidth="6" fill="transparent" />
+                                                <circle cx="40" cy="40" r="32" 
+                                                    className={txResult.isHealthy ? "stroke-emerald-400" : "stroke-amber-400"} 
+                                                    strokeWidth="6" fill="transparent" 
+                                                    strokeDasharray={200} 
+                                                    strokeDashoffset={200 - (200 * txResult.healthScore) / 100} 
                                                 />
                                             </svg>
-                                        </div>
-                                    </motion.div>
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div className="group/feat flex items-center gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/50 hover:bg-white hover:border-emerald-200 dark:hover:bg-slate-800 dark:hover:border-emerald-500/30 hover:shadow-md transition-all duration-200 cursor-default">
-                                        <div className="p-2.5 bg-emerald-100 dark:bg-emerald-900/40 rounded-xl group-hover/feat:scale-110 group-hover/feat:bg-emerald-500 transition-all duration-200">
-                                            <Camera className="w-5 h-5 text-emerald-600 dark:text-emerald-400 group-hover/feat:text-white transition-colors" />
-                                        </div>
-                                        <div>
-                                            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">Visual ID</h4>
-                                            <p className="text-[11px] font-medium text-slate-400">Instant analysis for 15+ crop diseases</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="group/feat flex items-center gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/50 hover:bg-white hover:border-blue-200 dark:hover:bg-slate-800 dark:hover:border-blue-500/30 hover:shadow-md transition-all duration-200 cursor-default">
-                                        <div className="p-2.5 bg-blue-100 dark:bg-blue-900/40 rounded-xl group-hover/feat:scale-110 group-hover/feat:bg-blue-500 transition-all duration-200">
-                                            <Sprout className="w-5 h-5 text-blue-600 dark:text-blue-400 group-hover/feat:text-white transition-colors" />
-                                        </div>
-                                        <div>
-                                            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">Remedy Bot</h4>
-                                            <p className="text-[11px] font-medium text-slate-400">Curated organic & chemical treatments</p>
+                                            <span className="absolute text-sm font-black text-white">{txResult.healthScore}%</span>
                                         </div>
                                     </div>
                                 </div>
+
+                                <div className="bg-slate-50 dark:bg-[#050C16] border border-slate-200 dark:border-white/10 p-5 rounded-3xl flex flex-col gap-4 shadow-lg">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-2 bg-sky-500/10 rounded-xl text-sky-400">
+                                            <CloudSun className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-bold text-slate-800 dark:text-white">Weather Insights</h3>
+                                            <span className="text-[8px] font-extrabold uppercase tracking-widest text-slate-500">Localized Microclimate</span>
+                                        </div>
+                                    </div>
+                                    <hr className="border-slate-100 dark:border-white/5" />
+                                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                                        {txResult.weatherRisks}
+                                    </p>
+                                    <div className="bg-slate-100 dark:bg-black/35 border border-slate-100 dark:border-white/5 rounded-xl p-2.5 text-[10px] text-slate-500 dark:text-slate-400 flex justify-between items-center">
+                                        <span>Current weather parameters:</span>
+                                        <strong className="text-white">{txResult.weather}</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 5. Biological Recovery Timeline */}
+                            <div className="bg-slate-50 dark:bg-[#050C16] border border-slate-200 dark:border-white/10 p-5 rounded-3xl shadow-lg flex flex-col gap-4">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-2 bg-violet-500/10 rounded-xl text-violet-400">
+                                        <Compass className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-bold text-slate-800 dark:text-white">Recovery Timeline</h3>
+                                        <span className="text-[8px] font-extrabold uppercase tracking-widest text-slate-500">Recovery Milestones Tracker</span>
+                                    </div>
+                                </div>
+                                <hr className="border-slate-100 dark:border-white/5" />
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative pl-4 md:pl-0">
+                                    {txResult.recoveryTimeline && txResult.recoveryTimeline.length > 0 ? (
+                                        txResult.recoveryTimeline.map((item, idx) => (
+                                            <div key={idx} className="relative pl-6 md:pl-4 border-l border-slate-200 dark:border-white/10 md:border-l-0 md:border-t md:pt-4 md:mt-2">
+                                                <div className="absolute -left-[5px] top-1 md:-top-[5px] md:left-2 w-2 h-2 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(20,184,166,0.8)]" />
+                                                <h4 className="text-[10px] font-extrabold text-teal-400 uppercase tracking-widest">{item.day}</h4>
+                                                <p className="text-[11px] text-slate-300 font-bold leading-normal mt-1">{item.milestone}</p>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <>
+                                            <div className="relative pl-6 md:pl-4 border-l border-slate-200 dark:border-white/10 md:border-l-0 md:border-t md:pt-4 md:mt-2">
+                                                <div className="absolute -left-[5px] top-1 md:-top-[5px] md:left-2 w-2 h-2 rounded-full bg-teal-400" />
+                                                <h4 className="text-[10px] font-extrabold text-teal-400 uppercase tracking-widest">Day 1: Intervention</h4>
+                                                <p className="text-[11px] text-slate-300 font-bold leading-normal mt-1">Apply target treatment according to expert dosages.</p>
+                                            </div>
+                                            <div className="relative pl-6 md:pl-4 border-l border-slate-200 dark:border-white/10 md:border-l-0 md:border-t md:pt-4 md:mt-2">
+                                                <div className="absolute -left-[5px] top-1 md:-top-[5px] md:left-2 w-2 h-2 rounded-full bg-blue-400" />
+                                                <h4 className="text-[10px] font-extrabold text-blue-400 uppercase tracking-widest">Day 3: Arrest</h4>
+                                                <p className="text-[11px] text-slate-300 font-bold leading-normal mt-1">Lesions halt expansion. Inspect leaf boundaries.</p>
+                                            </div>
+                                            <div className="relative pl-6 md:pl-4 border-l border-slate-200 dark:border-white/10 md:border-l-0 md:border-t md:pt-4 md:mt-2">
+                                                <div className="absolute -left-[5px] top-1 md:-top-[5px] md:left-2 w-2 h-2 rounded-full bg-purple-400" />
+                                                <h4 className="text-[10px] font-extrabold text-purple-400 uppercase tracking-widest">Day 7: Re-Scan</h4>
+                                                <p className="text-[11px] text-slate-300 font-bold leading-normal mt-1">Execute secondary scan check. Confirm foliar regeneration.</p>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* 6. AI Chat Suggestions */}
+                            {txResult.chatSuggestions && txResult.chatSuggestions.length > 0 && (
+                                <div className="space-y-3">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">AI Assistant Chat Suggestions</span>
+                                    <div className="flex flex-wrap gap-2">
+                                        {txResult.chatSuggestions.map((suggestion, idx) => (
+                                            <button
+                                                key={idx}
+                                                type="button"
+                                                onClick={() => {
+                                                    window.dispatchEvent(new CustomEvent('triggerChatQuery', { detail: { query: suggestion } }));
+                                                    toast.success("Opening Farmer Chat Assistant...");
+                                                }}
+                                                className="bg-white/5 hover:bg-teal-500/10 border border-slate-200 dark:border-white/10 hover:border-teal-500/30 text-slate-300 hover:text-white px-4 py-2.5 rounded-2xl text-[11px] font-bold transition-all text-left flex items-center gap-2 group"
+                                            >
+                                                <Sparkles className="w-3.5 h-3.5 text-teal-400 group-hover:scale-110 transition-transform" />
+                                                <span>{suggestion}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Expert Clinical Commentary footer */}
+                            <div className="bg-slate-50 dark:bg-[#050C16] border border-slate-200 dark:border-white/10 p-5 md:p-6 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                <div className="flex gap-4 items-start flex-1">
+                                    <div className="p-3 bg-slate-100 dark:bg-[#0A1628] rounded-2xl border border-slate-100 dark:border-white/5 text-teal-400 shrink-0">
+                                        <Activity className="w-5 h-5 animate-pulse" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <h4 className="text-[10px] font-bold tracking-wider uppercase text-slate-400 font-extrabold font-bold">Expert Agronomist Note</h4>
+                                        <p className="text-sm font-semibold leading-relaxed text-slate-800 dark:text-white italic">
+                                            "{txResult.instructions}"
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="shrink-0 flex items-center gap-3 w-full md:w-auto">
+                                    <button
+                                        type="button"
+                                        onClick={() => isSpeaking ? stopSpeaking() : speakAdvice(`${txResult.diseaseName}. ${txResult.instructions}`)}
+                                        className={clsx(
+                                            "flex-1 md:flex-initial py-3.5 px-6 rounded-xl text-[10px] uppercase font-bold tracking-widest flex items-center justify-center gap-2 border transition-all",
+                                            isSpeaking 
+                                                ? "bg-rose-500 border-rose-400 text-white animate-pulse" 
+                                                : "bg-slate-100 dark:bg-[#0A1628]/60 border-slate-200 dark:border-white/10 text-slate-300 hover:bg-slate-800/40"
+                                        )}
+                                    >
+                                        {isSpeaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                                        {isSpeaking ? "Pause Audio" : "Listen Advice"}
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={resetForm}
+                                        className="py-3.5 px-6 rounded-xl text-[10px] uppercase font-bold tracking-widest bg-white/5 hover:bg-white/10 border border-slate-200 dark:border-white/10 text-white transition-all flex items-center gap-2 justify-center"
+                                    >
+                                        <RefreshCw className="w-4 h-4" />
+                                        Scan Another
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        // ==================== IDLE STATE: Upload prompt ====================
+                        <motion.div
+                            key="idle"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="flex-1 flex flex-col items-center justify-center gap-6 bg-white/60 dark:bg-slate-900/20 backdrop-blur-md border border-slate-200 dark:border-white/10 rounded-3xl p-8 relative overflow-hidden"
+                        >
+                            <div className="absolute -top-32 -right-32 w-80 h-80 bg-teal-500/5 rounded-full blur-[80px] pointer-events-none" />
+                            <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-emerald-500/5 rounded-full blur-[80px] pointer-events-none" />
+
+                            {/* Weather strip — useful context, not decorative */}
+                            {liveWeather && (
+                                <div className="flex items-center gap-3 bg-slate-50 dark:bg-[#050C16] border border-slate-200 dark:border-white/10 rounded-2xl px-4 py-2.5 text-xs">
+                                    <CloudSun className="w-4 h-4 text-sky-400 shrink-0" />
+                                    <span className="text-slate-600 dark:text-slate-300 font-medium">
+                                        {liveWeather.temp}°C · {liveWeather.condition} · Humidity {liveWeather.humidity}%
+                                    </span>
+                                    {liveWeather.humidity > 75 && (
+                                        <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
+                                            ⚠ High Humidity — Disease Risk
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+
+                            <div className="text-center space-y-3 relative z-10">
+                                <div className="w-20 h-20 mx-auto bg-gradient-to-br from-teal-500/20 to-emerald-500/10 border border-teal-500/30 rounded-3xl flex items-center justify-center">
+                                    <ScanLine className="w-9 h-9 text-teal-400" />
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-800 dark:text-white">AI Plant Doctor</h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed">
+                                    Upload a photo of your crop leaf. The AI will instantly detect the plant species, identify any disease, and give you a full treatment plan.
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-lg relative z-10">
+                                {[
+                                    { icon: UploadCloud, label: 'Upload Leaf Photo', color: 'text-teal-400' },
+                                    { icon: Sprout,      label: 'AI Detects Crop & Disease', color: 'text-emerald-400' },
+                                    { icon: ShieldCheck, label: 'Get Treatment Plan', color: 'text-violet-400' },
+                                ].map(({ icon: Icon, label, color }, i) => (
+                                    <div key={i} className="bg-slate-50 dark:bg-[#050C16] border border-slate-100 dark:border-white/5 rounded-2xl p-4 flex flex-col items-center gap-2 text-center">
+                                        <Icon className={clsx('w-5 h-5', color)} />
+                                        <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 leading-tight">{label}</span>
+                                    </div>
+                                ))}
                             </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
             </div>
-        </div >
+            
+        </div>
     );
+};
+
+// Nutrient threshold calculator
+const getNutrientGuidance = (n, p, k, diseaseName) => {
+    const isHealthy = diseaseName.toLowerCase().includes('healthy');
+    if (isHealthy) {
+        return "✓ Soil Nutrient Balance: N-P-K concentrations match baseline growth indicators. Maintain organic compost dressing and normal irrigation cycles.";
+    }
+
+    if (n > 120) {
+        return `⚠️ CRITICAL: Nitrogen (N) is excessively high (${n} kg/ha). STOP all Urea/Nitrogen applications for 10 days immediately. Pathogens and fungi thrive inside nitrogen-heavy vegetative growth. Action: Drain excess water from paddy ridges.`;
+    }
+
+    if (p < 40) {
+        return `💡 Phosphorus Deficient: P level is low (${p} kg/ha). Drench with rock phosphate or Single Super Phosphate (SSP) to stimulate root defense layers.`;
+    }
+
+    if (k < 50) {
+        return `💡 Potash Deficient: K level is low (${k} kg/ha). Apply Muriate of Potash (MOP @ 20kg/acre) to build structural cell walls against fungal spore attacks.`;
+    }
+
+    return "✓ Soil Metrics Normal: Nitrogen, Phosphorus, and Potash are within normal range. Proceed with the targeted treatments listed below.";
 };
 
 export default ImageUploadForm;

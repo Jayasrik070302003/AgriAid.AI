@@ -36,8 +36,8 @@ exports.simulateGrowth = async (req, res) => {
 
         // 3. Groq Vision + Gemini analysis
         const analysis = await analyzeCropImage(
-            publicUrl, cropName, 'field',
-            { district: district || 'Unknown', state: state || 'Unknown' },
+            publicUrl,
+            { district: district || 'Unknown', state: state || 'Unknown', country: 'India', taluk: '', village: '', latitude: '', longitude: '', pincode: '', elevation: '' },
             weather
         );
 

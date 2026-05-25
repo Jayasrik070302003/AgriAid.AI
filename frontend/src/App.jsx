@@ -12,7 +12,6 @@ import LoginPage from './AuthModule/LoginPage';
 import SignupPage from './AuthModule/SignupPage';
 import ProtectedRoute from './AuthModule/ProtectedRoute';
 import { LanguageProvider, useLanguage } from './Context/LanguageContext';
-import CropCalendar from './FarmerModule/Tools/CropCalendar';
 import FertilizerCalculator from './FarmerModule/Tools/FertilizerCalculator';
 import WeatherForecastTool from './FarmerModule/Tools/WeatherForecastTool';
 import MarketPrices from './FarmerModule/Tools/MarketPrices';
@@ -20,8 +19,10 @@ import SoilHealthCheck from './FarmerModule/Tools/SoilHealthCheck';
 import ImpactSimulator from './FarmerModule/Tools/ImpactSimulator';
 import FutureGrowthSimulator from './FarmerModule/Tools/FutureGrowthSimulator';
 import DiseaseSpreadSimulator from './FarmerModule/Tools/DiseaseSpreadSimulator';
-import SmartFarmingTimeline from './FarmerModule/Tools/SmartFarmingTimeline';
 import ResearchViewer from './FarmerModule/Research/ResearchViewer';
+import AIFarmingAssistant from './FarmerModule/Tools/AIFarmingAssistant';
+import ClimateRiskPredictor from './FarmerModule/Tools/ClimateRiskPredictor';
+import CropCalendar from './FarmerModule/Tools/CropCalendar';
 
 import FarmingChatBot from './FarmerModule/FarmingChatBot';
 
@@ -76,11 +77,6 @@ function AppContent() {
               <HelpSupport />
             </ProtectedRoute>
           } />
-          <Route path="/tools/crop-calendar" element={
-            <ProtectedRoute>
-              <CropCalendar />
-            </ProtectedRoute>
-          } />
           <Route path="/tools/fertilizer-calc" element={
             <ProtectedRoute>
               <FertilizerCalculator />
@@ -121,14 +117,24 @@ function AppContent() {
               <DiseaseSpreadSimulator />
             </ProtectedRoute>
           } />
-          <Route path="/tools/farming-timeline" element={
-            <ProtectedRoute>
-              <SmartFarmingTimeline />
-            </ProtectedRoute>
-          } />
           <Route path="/research/:id" element={
             <ProtectedRoute>
               <ResearchViewer />
+            </ProtectedRoute>
+          } />
+          <Route path="/tools/ai-farming-assistant" element={
+            <ProtectedRoute>
+              <AIFarmingAssistant />
+            </ProtectedRoute>
+          } />
+          <Route path="/tools/climate-risk" element={
+            <ProtectedRoute>
+              <ClimateRiskPredictor />
+            </ProtectedRoute>
+          } />
+          <Route path="/tools/crop-calendar" element={
+            <ProtectedRoute>
+              <CropCalendar />
             </ProtectedRoute>
           } />
         </Routes>

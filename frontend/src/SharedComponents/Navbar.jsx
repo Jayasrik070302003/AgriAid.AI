@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import { useLanguage } from '../Context/LanguageContext';
 import { useAuth } from '../Context/AuthContext';
-import { User, LogOut, Settings, HelpCircle, Bell, Wrench, Calendar, Calculator, CloudSun, TrendingUp, FlaskConical, BookOpen, Leaf, Microscope, Bug } from 'lucide-react';
+import { User, LogOut, Settings, HelpCircle, Bell, Wrench, Calendar, Calculator, CloudSun, TrendingUp, FlaskConical, BookOpen, Leaf, Microscope, Bug, MessageSquare, CloudLightning } from 'lucide-react';
+import ThemeSwitcher from './ThemeSwitcher';
 
 const Navbar = () => {
     const [isOpen, setIsOpen] = React.useState(false);
@@ -19,19 +20,16 @@ const Navbar = () => {
     ];
 
     const tools = [
-        { name: t('nav_crop_calendar'), path: '/tools/crop-calendar', icon: Calendar, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-900/30' },
-        { name: t('nav_fert_calc'), path: '/tools/fertilizer-calc', icon: Calculator, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/30' },
-        { name: t('nav_weather_forecast'), path: '/tools/weather-forecast', icon: CloudSun, color: 'text-sky-500', bg: 'bg-sky-50 dark:bg-sky-900/30' },
-        { name: t('nav_market_prices'), path: '/tools/market-prices', icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/30' },
-        { name: t('nav_soil_health'), path: '/tools/soil-health', icon: FlaskConical, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/30' },
+        { name: t('nav_soil_health') || 'Soil Health Check', path: '/tools/soil-health', icon: FlaskConical, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/30' },
+        { name: t('nav_crop_calendar') || 'Crop Calendar', path: '/tools/crop-calendar', icon: Calendar, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-900/30' },
+        { name: 'AI Farming Assistant', path: '/tools/ai-farming-assistant', icon: MessageSquare, color: 'text-teal-500', bg: 'bg-teal-50 dark:bg-teal-900/30' },
     ];
 
     const simulators = [
-        { name: t('nav_impact_sim'), path: '/tools/impact-simulator', icon: Sprout, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/30' },
-        { name: t('nav_future_growth'), path: '/tools/future-growth', icon: TrendingUp, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/30' },
-        { name: t('nav_disease_spread'), path: '/tools/disease-spread', icon: Bug, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-900/30' },
-        { name: t('nav_farming_timeline'), path: '/tools/farming-timeline', icon: Calendar, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/30' },
+        { name: t('nav_impact_sim') || 'Impact Simulator', path: '/tools/impact-simulator', icon: Sprout, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/30' },
+        { name: 'Climate Risk Predictor', path: '/tools/climate-risk', icon: CloudLightning, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-900/30' },
     ];
+
 
     return (
         <div className="sticky top-0 left-0 right-0 z-50">
@@ -131,6 +129,9 @@ const Navbar = () => {
                 {/* Right Actions */}
                 <div className="hidden md:flex items-center gap-2">
 
+                    {/* Theme Selector */}
+                    <ThemeSwitcher />
+
                     {/* Language Switcher */}
                     <div className="relative group">
                         <button className="h-[34px] px-3 flex items-center gap-1.5 text-[13px] font-medium bg-gray-100/80 text-gray-700 rounded-full hover:bg-gray-200 transition-colors border border-transparent dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 shrink-0">
@@ -209,9 +210,11 @@ const Navbar = () => {
 
                 {/* Mobile Menu Button */}
                 <div className="md:hidden flex items-center gap-3">
+                    <ThemeSwitcher />
+
                     <button
                         onClick={() => setLanguage(language === 'EN' ? 'HI' : language === 'HI' ? 'TA' : 'EN')}
-                        className="text-[11px] font-bold text-farm-green bg-green-50 px-2 py-1 rounded"
+                        className="text-[11px] font-bold text-farm-green bg-green-50 px-2 py-1 rounded dark:bg-slate-800 dark:text-emerald-400"
                     >
                         {language}
                     </button>

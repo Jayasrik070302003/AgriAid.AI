@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import clsx from 'clsx';
+import apiClient from '../../services/apiClient';
 
 const WeatherForecastTool = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -128,7 +129,7 @@ const WeatherForecastTool = () => {
 
             // Optional Refinement
             try {
-                const refRes = await axios.post('http://localhost:3001/api/farmer/weather/refine', {
+                const refRes = await apiClient.post('/api/farmer/weather/refine', {
                     location: locName,
                     current: { temp: Math.round(curr.temperature_2m), humidity: curr.relative_humidity_2m }
                 });
@@ -136,7 +137,7 @@ const WeatherForecastTool = () => {
                     setAdvisory(refRes.data.data.advisory);
                     setWeatherData(prev => ({ ...prev, summary: refRes.data.data.summary.toUpperCase() }));
                 }
-            } catch (e) { console.warn("AI Refinement unavailable"); }
+            } catch (e) { console.warn('AI Refinement unavailable'); }
 
         } catch (e) { showNotification('error', 'Failed to fetch weather'); }
         finally { setLoading(false); }

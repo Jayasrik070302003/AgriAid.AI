@@ -1,22 +1,52 @@
-const { groqVision, groqChatResponse, groqSimulationSummary } = require('./groqAnalyzer');
-const { geminiTreatmentAdvice, geminiWeatherAdvisory, geminiSpreadAnalysis, geminiFallbackChat } = require('./geminiAdvisor');
+const { groqVision, groqChatResponse, groqCompareScenarios } = require('./groqAnalyzer');
+const { geminiTreatmentAdvice, geminiWeatherAdvisory, geminiSpreadAnalysis, geminiFallbackChat, geminiVision } = require('./geminiAdvisor');
 
-// STEP 1: Groq analyzes image → disease detection
+// STEP 1: Groq Vision / Gemini Vision analyzes image → validates botanical content & detects species/disease
 // STEP 2: Gemini generates treatment + advice
-async function analyzeCropImage(imageUrl, cropType, farmingType, location, weather = null) {
-    // Step 1 — Groq Vision: detect disease
+async function analyzeCropImage(imageUrl, location, weather = null) {
     let detection;
+    const locString = `${location.village ? location.village + ', ' : ''}${location.taluk ? location.taluk + ' Taluk, ' : ''}${location.district}, ${location.state}, ${location.country} (Coordinates: ${location.latitude || 'N/A'}, ${location.longitude || 'N/A'}, Elevation: ${location.elevation ? location.elevation + 'm' : 'N/A'}, Pincode: ${location.pincode || 'N/A'})`;
+    
     try {
-        detection = await groqVision(imageUrl, cropType, `${location.district}, ${location.state}`);
+        detection = await groqVision(imageUrl, locString);
     } catch (err) {
-        console.warn('[Groq Vision] Failed, using fallback detection:', err.message);
-        detection = { crop: cropType, disease: 'Unknown', severity: 'Medium', confidence: 60, status: 'Warning' };
+        console.warn('[Groq Vision] Failed, trying fallback Gemini Vision:', err.message);
+        try {
+            detection = await geminiVision(imageUrl, locString);
+        } catch (gErr) {
+            console.error('[Gemini Vision] Fallback failed:', gErr.message);
+            // Default safe fallback structure if both APIs fail to reach/parse
+            detection = { 
+                isValidPlant: true, 
+                crop: 'Unknown', 
+                scientificName: 'N/A', 
+                category: 'field', 
+                confidence: 50.00, 
+                disease: 'Healthy', 
+                severity: 'Low', 
+                status: 'Healthy' 
+            };
+        }
     }
 
-    // Step 2 — Gemini: generate treatment advice
+    // Step 1.1: If image is not a valid plant specimen, return early
+    if (detection && detection.isValidPlant === false) {
+        return { isValidPlant: false };
+    }
+
+    // Step 2 — Gemini: generate treatment advice based on auto-detected crop taxonomy
     let treatment;
+    const detectedCrop = detection.crop || 'Unknown';
+    const detectedCategory = detection.category || 'field';
+
     try {
-        treatment = await geminiTreatmentAdvice(detection.disease, detection.severity, cropType, farmingType, weather);
+        treatment = await geminiTreatmentAdvice(
+            detection.disease, 
+            detection.severity, 
+            detectedCrop, 
+            detectedCategory, 
+            weather
+        );
     } catch (err) {
         console.warn('[Gemini Treatment] Failed, using fallback:', err.message);
         treatment = {
@@ -28,20 +58,24 @@ async function analyzeCropImage(imageUrl, cropType, farmingType, location, weath
         };
     }
 
-    return { ...detection, ...treatment };
+    return { ...detection, ...treatment, isValidPlant: true };
 }
 
-async function getChatResponse(userMessage) {
+async function getChatResponse(userMessage, language = 'EN') {
+    const langName = language === 'TA' ? 'Tamil' : language === 'HI' ? 'Hindi' : 'English';
+    const langgedMessage = language !== 'EN'
+        ? `[Respond ONLY in ${langName}] ${userMessage}`
+        : userMessage;
     try {
-        return await groqChatResponse(userMessage);
+        return await groqChatResponse(langgedMessage);
     } catch (err) {
         console.warn('[Groq Chat] Failed, falling back to Gemini:', err.message);
-        return geminiFallbackChat(userMessage);
+        return geminiFallbackChat(langgedMessage);
     }
 }
 
-async function getSimulationExplanation(crop, area, organic, chemical, language = 'English') {
-    return groqSimulationSummary(crop, area, organic, chemical, language);
+async function getSimulationExplanation(base, scenarioA, scenarioB, language = 'English') {
+    return groqCompareScenarios(base, scenarioA, scenarioB, language);
 }
 
 async function getSpreadAnalysis(cropName, diseaseName, spreadData, weather) {

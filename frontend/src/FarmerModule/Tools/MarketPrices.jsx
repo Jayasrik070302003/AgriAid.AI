@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TrendingUp, TrendingDown, Search, Filter, Bell, ArrowUpRight, ArrowDownRight, RefreshCw, ChevronDown, IndianRupee, Share2, Info, Activity, MapPin, BarChart3, Clock } from 'lucide-react';
+import { TrendingUp, TrendingDown, Search, Filter, Bell, ArrowUpRight, ArrowDownRight, RefreshCw, ChevronDown, IndianRupee, Share2, Info, Activity, MapPin, BarChart3, Clock, Loader2 } from 'lucide-react';
 import clsx from 'clsx';
+import apiClient from '../../services/apiClient';
 
 const MarketPrices = () => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -10,19 +11,26 @@ const MarketPrices = () => {
     const [selectedCrop, setSelectedCrop] = useState(null);
     const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
     const [isSentimentOpen, setIsSentimentOpen] = useState(false);
+    const [aiData, setAiData] = useState(null);
+    const [aiLoading, setAiLoading] = useState(true);
 
     const categories = ['All', 'Vegetables', 'Fruits', 'Grains', 'Pulses', 'Commercial'];
 
-    const marketData = [
-        { crop: 'Tomato', price: 2500, previous: 2350, unit: 'Quintal', category: 'Vegetables', location: 'Pune APMC', history: [2200, 2300, 2250, 2400, 2380, 2500] },
-        { crop: 'Onion', price: 1800, previous: 1850, unit: 'Quintal', category: 'Vegetables', location: 'Nashik APMC', history: [1900, 1880, 1850, 1820, 1810, 1800] },
-        { crop: 'Potato', price: 1200, previous: 1180, unit: 'Quintal', category: 'Vegetables', location: 'Mumbai', history: [1100, 1120, 1150, 1140, 1180, 1200] },
-        { crop: 'Wheat', price: 2100, previous: 2100, unit: 'Quintal', category: 'Grains', location: 'Delhi', history: [2080, 2090, 2100, 2100, 2100, 2100] },
-        { crop: 'Rice (Basmati)', price: 4500, previous: 4100, unit: 'Quintal', category: 'Grains', location: 'Karnal', history: [4000, 4100, 4200, 4300, 4400, 4500] },
-        { crop: 'Cotton', price: 6200, previous: 6300, unit: 'Quintal', category: 'Commercial', location: 'Nagpur', history: [6400, 6350, 6300, 6250, 6220, 6200] },
-        { crop: 'Soybean', price: 3800, previous: 3650, unit: 'Quintal', category: 'Pulses', location: 'Indore', history: [3500, 3600, 3550, 3650, 3700, 3800] },
-        { crop: 'Apple', price: 8500, previous: 8200, unit: 'Quintal', category: 'Fruits', location: 'Shimla', history: [8000, 8100, 8200, 8300, 8400, 8500] },
-    ];
+    const fetchMarketData = async () => {
+        setAiLoading(true);
+        try {
+            const res = await apiClient.get('/api/farmer/tools/market-sentiment');
+            setAiData(res.data.data);
+        } catch (e) {
+            console.warn('Market data fetch failed:', e.message);
+        } finally {
+            setAiLoading(false);
+        }
+    };
+
+    useEffect(() => {}, []);
+
+    const marketData = aiData?.market_data || [];
 
     const getTrend = (current, previous) => {
         if (!previous) return { value: '0.0%', direction: 'neutral', diff: 0 };
@@ -115,8 +123,8 @@ const MarketPrices = () => {
                     animate={{ opacity: 1, x: 0 }}
                     className="flex flex-wrap items-center gap-4"
                 >
-                    <button className="flex items-center gap-3 px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl font-black text-[11px] uppercase tracking-widest text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 shadow-sm transition-all active:scale-95 group">
-                        <RefreshCw className="h-4 w-4 group-hover:rotate-180 transition-transform duration-700" /> Refresh Stream
+                    <button onClick={fetchMarketData} disabled={aiLoading} className="flex items-center gap-3 px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl font-black text-[11px] uppercase tracking-widest text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 shadow-sm transition-all active:scale-95 group disabled:opacity-50">
+                        {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4 group-hover:rotate-180 transition-transform duration-700" />} Refresh Stream
                     </button>
                     <button className="flex items-center gap-3 px-8 py-4 bg-slate-900 dark:bg-emerald-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:scale-[1.05] transition-all shadow-2xl shadow-slate-900/20 active:scale-95">
                         <Bell className="h-4 w-4 animate-bounce" /> Optimization Alerts
@@ -214,7 +222,7 @@ const MarketPrices = () => {
                                 <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em]">AI Market Sentiment</span>
                             </div>
                             <div className="flex items-baseline gap-4 mb-4">
-                                <h4 className="text-5xl font-black text-white tracking-widest">BULLISH</h4>
+                                <h4 className="text-5xl font-black text-white tracking-widest">{aiData?.sentiment || 'LOADING'}</h4>
                                 <BarChart3 className="w-6 h-6 text-emerald-500" />
                             </div>
                         </div>
@@ -545,8 +553,8 @@ const MarketPrices = () => {
                                                 </div>
                                                 <span className="text-xs font-black uppercase tracking-[0.3em] text-emerald-500">Live AI Matrix</span>
                                             </div>
-                                            <h2 className="text-5xl font-black text-slate-900 dark:text-white tracking-widest leading-none mb-4">BULLISH</h2>
-                                            <p className="text-slate-500 dark:text-slate-400 font-bold">The market is currently exhibiting strong upward momentum across Tier-1 and Tier-2 Mandis.</p>
+                                            <h2 className="text-5xl font-black text-slate-900 dark:text-white tracking-widest leading-none mb-4">{aiData?.sentiment || 'LOADING'}</h2>
+                                            <p className="text-slate-500 dark:text-slate-400 font-bold">{aiData?.summary || 'Loading market intelligence...'}</p>
                                         </div>
 
                                         <div className="space-y-6 flex-1">
@@ -631,7 +639,7 @@ const MarketPrices = () => {
                                                 <span className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500">Global Factor Analysis</span>
                                             </div>
                                             <p className="text-lg font-bold text-slate-300 leading-relaxed mb-8">
-                                                "Current fuel price stabilization and favorable monsoon indicators suggest a 92% probability of sustained price appreciation in Commercial crops."
+                                                {aiData?.next_week_outlook || aiData?.advisory || "Loading AI market outlook..."}
                                             </p>
                                             <div className="flex items-center gap-6">
                                                 <div className="flex flex-col">

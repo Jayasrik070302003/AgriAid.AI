@@ -48,6 +48,23 @@ CREATE INDEX IF NOT EXISTS idx_crop_scans_user ON crop_scans(user_id);
 CREATE INDEX IF NOT EXISTS idx_simulations_user ON simulations(user_id);
 CREATE INDEX IF NOT EXISTS idx_crop_scans_created ON crop_scans(created_at DESC);
 
--- Storage Buckets (create via Supabase Dashboard)
--- Bucket: crop-images (public)
--- Bucket: reports (private)
+-- Storage Buckets Setup
+-- 1. Create crop-images bucket if it doesn't exist
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('crop-images', 'crop-images', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- 2. Drop existing policies to prevent conflicts
+DROP POLICY IF EXISTS "Allow Public Uploads" ON storage.objects;
+DROP POLICY IF EXISTS "Allow Public Read Access" ON storage.objects;
+
+-- 3. Policy to allow anonymous uploads to the crop-images bucket
+CREATE POLICY "Allow Public Uploads" ON storage.objects
+FOR INSERT TO public
+WITH CHECK (bucket_id = 'crop-images');
+
+-- 4. Policy to allow public read access to the crop-images bucket
+CREATE POLICY "Allow Public Read Access" ON storage.objects
+FOR SELECT TO public
+USING (bucket_id = 'crop-images');
+
