@@ -485,3 +485,22 @@ body, div, header, main, nav, a, button, h1, h2, h3, h4, h5, h6, p, span, td, th
 .impact-simulator-container button.bg-emerald-500 * {
   color: #ffffff !important;
 }
+
+/* Crop Calendar Button Overrides */
+[data-theme="light"] .crop-calendar-container button:disabled {
+  background-color: #e2e8f0 !important;
+  color: #94a3b8 !important;
+}
+[data-theme="green-agri"] .crop-calendar-container button:disabled {
+  background-color: #dcfce7 !important;
+  color: #86efac !important;
+}
+
+/* Make active buttons dynamically accent-colored */
+.crop-calendar-container button:not(:disabled) {
+  background-color: var(--accent-color) !important;
+  color: #ffffff !important;
+}
+.crop-calendar-container button:not(:disabled):hover {
+  background-color: var(--accent-hover) !important;
+}
