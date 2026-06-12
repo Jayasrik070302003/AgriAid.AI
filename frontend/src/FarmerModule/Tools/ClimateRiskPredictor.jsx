@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import useGPS from '../../hooks/useGPS';
 import { API_BASE_URL } from '../../config';
 
-const apiClient = axios.create({ baseURL: API_BASE_URL, timeout: 60000 });
+const apiClient = axios.create({ baseURL: `${API_BASE_URL}/api/farmer`, timeout: 60000 });
 
 // ─── Reusable Severity Meter ──────────────────────────────────────────────────
 const SeverityMeter = ({ title, severity, icon: Icon }) => {
@@ -103,7 +103,7 @@ export default function ClimateRiskPredictor() {
     const fetchLiveWeather = async (lat, lng) => {
         setIsFetchingWeather(true);
         try {
-            const res = await apiClient.get(`/api/farmer/simulator/weather-live?lat=${lat}&lng=${lng}`);
+            const res = await apiClient.get(`/simulator/weather-live?lat=${lat}&lng=${lng}`);
             if (res.data.success && res.data.data) {
                 const weather = res.data.data;
                 setFormData(prev => ({
@@ -131,12 +131,35 @@ export default function ClimateRiskPredictor() {
         setIsAnalyzing(true);
         setResult(null);
         try {
-            const res = await apiClient.post('/api/farmer/simulator/climate-risk', formData);
+            // Clean payload - don't send empty strings
+            const payload = {
+                crop: formData.crop,
+                state: formData.state,
+                district: formData.district
+            };
+            
+            // Only include weather fields if they have values
+            if (formData.temperature !== '' && formData.temperature !== null) {
+                payload.temperature = parseFloat(formData.temperature);
+            }
+            if (formData.humidity !== '' && formData.humidity !== null) {
+                payload.humidity = parseFloat(formData.humidity);
+            }
+            if (formData.rainfall !== '' && formData.rainfall !== null) {
+                payload.rainfall = parseFloat(formData.rainfall);
+            }
+
+            const res = await apiClient.post('/simulator/climate-risk', payload);
             if (res.data.success) {
                 setResult(res.data.data);
-                toast.success('AI Analysis Complete!');
+                if (res.data.data.autoFetchedWeather) {
+                    toast.success(`AI Analysis Complete! Weather auto-fetched: ${res.data.data.weatherData.temperature}°C`);
+                } else {
+                    toast.success('AI Analysis Complete!');
+                }
             }
         } catch (error) {
+            console.error('[Climate Risk Error]', error.response?.data);
             toast.error(error.response?.data?.message || 'Failed to analyze climate risk. Please try again.');
         } finally {
             setIsAnalyzing(false);
@@ -175,6 +198,13 @@ export default function ClimateRiskPredictor() {
                     </button>
 
                     <div className="h-px w-full bg-white/5" />
+
+                    <div className="bg-teal-500/5 border border-teal-500/10 rounded-xl p-3 flex items-start gap-2">
+                        <Info className="w-4 h-4 text-teal-400 flex-shrink-0 mt-0.5" />
+                        <p className="text-teal-300/80 text-[11px] leading-relaxed">
+                            Weather fields are <span className="font-bold text-teal-400">optional</span>. If left empty, system will auto-fetch live data from Open-Meteo based on your location.
+                        </p>
+                    </div>
 
                     {/* Inputs */}
                     <div className="space-y-4">
@@ -216,27 +246,31 @@ export default function ClimateRiskPredictor() {
 
                         <div className="flex gap-4">
                             <div className="flex-1 relative">
-                                <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1 block">Temp (°C)</label>
+                                <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1 block">
+                                    Temp (°C) <span className="text-teal-400/50 text-[8px]">(Optional - Auto)</span>
+                                </label>
                                 <input
-                                    required
                                     type="number"
                                     step="0.1"
                                     name="temperature"
                                     value={formData.temperature}
                                     onChange={handleChange}
+                                    placeholder="Auto-fill"
                                     className="w-full bg-[#050B14] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-teal-500/50 transition-all outline-none"
                                 />
                                 <ThermometerSun className="absolute right-3 bottom-3.5 w-4 h-4 text-slate-600" />
                             </div>
                             <div className="flex-1 relative">
-                                <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1 block">Humidity (%)</label>
+                                <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1 block">
+                                    Humidity (%) <span className="text-teal-400/50 text-[8px]">(Optional - Auto)</span>
+                                </label>
                                 <input
-                                    required
                                     type="number"
                                     step="1"
                                     name="humidity"
                                     value={formData.humidity}
                                     onChange={handleChange}
+                                    placeholder="Auto-fill"
                                     className="w-full bg-[#050B14] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-teal-500/50 transition-all outline-none"
                                 />
                                 <Droplets className="absolute right-3 bottom-3.5 w-4 h-4 text-slate-600" />
@@ -244,14 +278,16 @@ export default function ClimateRiskPredictor() {
                         </div>
                         
                         <div className="relative">
-                            <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1 block">Rainfall (mm/day)</label>
+                            <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1 block">
+                                Rainfall (mm/day) <span className="text-teal-400/50 text-[8px]">(Optional - Auto)</span>
+                            </label>
                             <input
-                                required
                                 type="number"
                                 step="0.1"
                                 name="rainfall"
                                 value={formData.rainfall}
                                 onChange={handleChange}
+                                placeholder="Auto-fill"
                                 className="w-full bg-[#050B14] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-teal-500/50 transition-all outline-none"
                             />
                             <CloudRain className="absolute right-3 bottom-3.5 w-4 h-4 text-slate-600" />

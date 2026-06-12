@@ -43,7 +43,9 @@ app.use((req, _res, next) => {
 });
 
 const farmerRoutes = require('./routes/farmer.routes');
+const schemesRoutes = require('./routes/schemes');
 app.use('/api/farmer', farmerRoutes);
+app.use('/api/schemes', schemesRoutes);
 
 app.get('/', (_req, res) => res.json({ status: 'AgriAid.AI API running', version: '3.0.0' }));
 

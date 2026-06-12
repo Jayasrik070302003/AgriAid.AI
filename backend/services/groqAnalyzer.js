@@ -5,24 +5,47 @@ const GROQ_MODEL = 'llama-3.3-70b-versatile';
 const GROQ_VISION_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct'; // supports images
 
 async function groqChat(messages, { temperature = 0.4, maxTokens = 1024 } = {}) {
-    if (!process.env.GROQ_API_KEY) throw new Error('GROQ_API_KEY not set in .env');
+    const groqKeys = [
+        process.env.GROQ_API_KEY,
+        process.env.GROQ_API_KEY_2,
+    ].filter(Boolean);
 
-    const res = await axios.post(
-        'https://api.groq.com/openai/v1/chat/completions',
-        { model: GROQ_MODEL, messages, temperature, max_tokens: maxTokens },
-        {
-            headers: {
-                'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            timeout: 30000
+    if (groqKeys.length === 0) throw new Error('GROQ_API_KEY not set in .env');
+
+    let lastError;
+    for (const key of groqKeys) {
+        try {
+            const res = await axios.post(
+                'https://api.groq.com/openai/v1/chat/completions',
+                { model: GROQ_MODEL, messages, temperature, max_tokens: maxTokens },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${key}`,
+                        'Content-Type': 'application/json'
+                    },
+                    timeout: 30000
+                }
+            );
+            return res.data.choices[0].message.content;
+        } catch (e) {
+            lastError = e;
+            if (e.response?.status === 429) {
+                console.warn(`[Groq] Key ...${key.slice(-6)} rate limited, trying next key`);
+                continue;
+            }
+            throw e;
         }
-    );
-    return res.data.choices[0].message.content;
+    }
+    throw lastError;
 }
 
 async function groqVision(imageUrl, location) {
-    if (!process.env.GROQ_API_KEY) throw new Error('GROQ_API_KEY not set in .env');
+    const groqKeys = [
+        process.env.GROQ_API_KEY,
+        process.env.GROQ_API_KEY_2,
+    ].filter(Boolean);
+
+    if (groqKeys.length === 0) throw new Error('GROQ_API_KEY not set in .env');
 
     const prompt = `You are an expert agricultural AI specializing in universal plant intelligence.
 Analyze this image from location: ${location}.
@@ -48,37 +71,56 @@ Return exactly this JSON format:
 
 Do NOT write any markdown, no wrapping backticks (such as \`\`\`json), and no extra text. Return pure JSON.`;
 
-    const res = await axios.post(
-        'https://api.groq.com/openai/v1/chat/completions',
-        {
-            model: GROQ_VISION_MODEL,
-            max_tokens: 512,
-            temperature: 0.2,
-            response_format: { type: "json_object" },
-            messages: [
+    let lastError;
+    for (const key of groqKeys) {
+        try {
+            const res = await axios.post(
+                'https://api.groq.com/openai/v1/chat/completions',
                 {
-                    role: 'user',
-                    content: [
-                        { type: 'text', text: prompt },
-                        { type: 'image_url', image_url: { url: imageUrl } }
+                    model: GROQ_VISION_MODEL,
+                    max_tokens: 512,
+                    temperature: 0.2,
+                    response_format: { type: "json_object" },
+                    messages: [
+                        {
+                            role: 'user',
+                            content: [
+                                { type: 'text', text: prompt },
+                                { type: 'image_url', image_url: { url: imageUrl } }
+                            ]
+                        }
                     ]
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${key}`,
+                        'Content-Type': 'application/json'
+                    },
+                    timeout: 30000
                 }
-            ]
-        },
-        {
-            headers: {
-                'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            timeout: 30000
+            );
+            const raw = res.data.choices[0].message.content.replace(/```json|```/g, '').trim();
+            return JSON.parse(raw);
+        } catch (e) {
+            lastError = e;
+            if (e.response?.status === 429) {
+                console.warn(`[Groq Vision] Key ...${key.slice(-6)} rate limited, trying next key`);
+                continue;
+            }
+            throw e;
         }
-    );
-
-    const raw = res.data.choices[0].message.content.replace(/```json|```/g, '').trim();
-    return JSON.parse(raw);
+    }
+    throw lastError;
 }
 
 async function groqCompareScenarios(base, scenarioA, scenarioB, language = 'English') {
+    const groqKeys = [
+        process.env.GROQ_API_KEY,
+        process.env.GROQ_API_KEY_2,
+    ].filter(Boolean);
+
+    if (groqKeys.length === 0) throw new Error('GROQ_API_KEY not set in .env');
+
     const prompt = `You are an expert agriculture consultant.
 Compare two farming scenarios for a ${base.area} acre farm growing ${base.crop} on ${base.soilType} soil under ${base.weather} conditions.
 
@@ -110,26 +152,38 @@ Return exactly this JSON format:
 }
 Do NOT write any markdown, no wrapping backticks, and no extra text. Return pure JSON.`;
 
-    const res = await axios.post(
-        'https://api.groq.com/openai/v1/chat/completions',
-        {
-            model: GROQ_MODEL,
-            max_tokens: 600,
-            temperature: 0.2,
-            response_format: { type: "json_object" },
-            messages: [{ role: 'user', content: prompt }]
-        },
-        {
-            headers: {
-                'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            timeout: 30000
+    let lastError;
+    for (const key of groqKeys) {
+        try {
+            const res = await axios.post(
+                'https://api.groq.com/openai/v1/chat/completions',
+                {
+                    model: GROQ_MODEL,
+                    max_tokens: 600,
+                    temperature: 0.2,
+                    response_format: { type: "json_object" },
+                    messages: [{ role: 'user', content: prompt }]
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${key}`,
+                        'Content-Type': 'application/json'
+                    },
+                    timeout: 30000
+                }
+            );
+            const raw = res.data.choices[0].message.content.replace(/```json|```/g, '').trim();
+            return JSON.parse(raw);
+        } catch (e) {
+            lastError = e;
+            if (e.response?.status === 429) {
+                console.warn(`[Groq Compare] Key ...${key.slice(-6)} rate limited, trying next key`);
+                continue;
+            }
+            throw e;
         }
-    );
-
-    const raw = res.data.choices[0].message.content.replace(/```json|```/g, '').trim();
-    return JSON.parse(raw);
+    }
+    throw lastError;
 }
 
 async function groqChatResponse(userMessage) {

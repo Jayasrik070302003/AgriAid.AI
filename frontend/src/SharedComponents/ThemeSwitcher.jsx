@@ -57,81 +57,85 @@ const ThemeSwitcher = () => {
 
       {/* Premium Dropdown Selector */}
       {isOpen && (
-        <div className="absolute right-0 mt-3 w-72 rounded-2xl border border-gray-100 bg-white p-3 shadow-xl z-50 origin-top-right dark:bg-slate-800 dark:border-slate-700 animate-fade-in">
+        <>
+          {/* Mobile Overlay to capture outside clicks */}
+          <div className="fixed inset-0 z-40 sm:hidden" onClick={() => setIsOpen(false)} />
           
-          {/* Header Title */}
-          <div className="px-3 py-2 bg-gray-50 dark:bg-slate-900/50 rounded-xl border-b border-gray-100 dark:border-slate-700/50 flex items-center justify-between mb-2">
-            <span className="text-[11px] font-black text-gray-850 dark:text-white uppercase tracking-widest leading-none flex items-center gap-1.5">
-              <Palette className="text-farm-green animate-pulse" size={11} /> 
-              Interface Theme
-            </span>
-            <span className="text-[9px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest leading-none">SYSTEM</span>
-          </div>
+          <div className="fixed left-1/2 -translate-x-1/2 top-20 sm:absolute sm:left-auto sm:translate-x-0 sm:right-0 sm:top-auto sm:mt-4 w-[85vw] max-w-[280px] sm:w-[260px] rounded-2xl border border-gray-200/60 bg-white/95 backdrop-blur-2xl p-3 shadow-2xl shadow-gray-200/50 dark:shadow-black/50 z-50 origin-top sm:origin-top-right dark:bg-slate-900/95 dark:border-slate-700/60 animate-fade-in">
+            
+            {/* Header Title */}
+            <div className="flex items-center justify-between pb-2 mb-2 border-b border-gray-100 dark:border-slate-800">
+              <span className="text-[10px] font-black text-gray-800 dark:text-white uppercase tracking-widest flex items-center gap-1.5">
+                <Palette className="text-emerald-500 animate-pulse" size={12} /> 
+                Interface Theme
+              </span>
+              <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-slate-800 rounded-md text-[9px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-widest">System</span>
+            </div>
 
-          {/* Theme Options */}
-          <div className="space-y-1">
-            {themes.map((themeOption) => {
-              const isSelected = themeOption.id === theme;
-              return (
-                <button
-                  key={themeOption.id}
-                  onClick={() => {
-                    setTheme(themeOption.id);
-                    setIsOpen(false);
-                  }}
-                  className={`w-full text-left p-2.5 rounded-xl flex items-start justify-between transition-all duration-300 hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer ${
-                    isSelected ? 'bg-gray-50/80 dark:bg-slate-700/30 border border-gray-200/50 dark:border-slate-600/30' : 'border border-transparent'
-                  }`}
-                >
-                  <div className="flex gap-2.5 min-w-0 flex-1">
-                    {/* Circle Icon Badge */}
-                    <div 
-                      className={`w-8.5 h-8.5 rounded-lg flex items-center justify-center shrink-0 shadow-sm border transition-colors ${
-                        isSelected 
-                          ? 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600' 
-                          : 'bg-gray-50 dark:bg-slate-900/85 border-gray-100 dark:border-slate-700'
-                      }`}
-                    >
-                      {getThemeIcon(themeOption.id, 14)}
-                    </div>
+            {/* Theme Options */}
+            <div className="space-y-1">
+              {themes.map((themeOption) => {
+                const isSelected = themeOption.id === theme;
+                return (
+                  <button
+                    key={themeOption.id}
+                    onClick={() => {
+                      setTheme(themeOption.id);
+                      setIsOpen(false);
+                    }}
+                    className={`w-full text-left p-2.5 rounded-xl flex items-center justify-between transition-all duration-300 group cursor-pointer ${
+                      isSelected 
+                        ? 'bg-emerald-50/50 dark:bg-emerald-500/10 border border-emerald-200/50 dark:border-emerald-500/20 shadow-sm' 
+                        : 'bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-slate-800/50 hover:border-gray-200/50 dark:hover:border-slate-700/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      {/* Circle Icon Badge */}
+                      <div 
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 ${
+                          isSelected 
+                            ? 'bg-white dark:bg-slate-800 shadow-sm border border-emerald-100 dark:border-emerald-500/30' 
+                            : 'bg-gray-100 dark:bg-slate-800 border border-transparent group-hover:bg-white dark:group-hover:bg-slate-700 group-hover:shadow-sm'
+                        }`}
+                      >
+                        {getThemeIcon(themeOption.id, 14)}
+                      </div>
 
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-[11px] font-black text-gray-900 dark:text-white leading-none mb-0.5 uppercase tracking-tight">
-                        {themeOption.name}
-                      </span>
-                      <span className="text-[9px] text-gray-400 dark:text-slate-400 font-bold leading-none mb-2 tracking-wide uppercase opacity-80 truncate">
-                        {themeOption.desc}
-                      </span>
-
-                      {/* Mini Color Palette Selector / Dots */}
-                      <div className="flex gap-1.5 items-center">
-                        {themeOption.colors.map((color, colorIdx) => (
-                          <span 
-                            key={colorIdx}
-                            className="w-2.5 h-2.5 rounded-full border border-gray-250/20 shadow-sm transition-transform duration-300 hover:scale-125" 
-                            style={{ backgroundColor: color }}
-                            title={
-                              colorIdx === 0 ? 'Background' :
-                              colorIdx === 1 ? 'Surface Card' :
-                              colorIdx === 2 ? 'Accent Color' : 'Text Primary'
-                            }
-                          />
-                        ))}
+                      <div className="flex flex-col min-w-0">
+                        <span className={`text-[11px] font-black uppercase tracking-tight leading-tight mb-1 ${isSelected ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-900 dark:text-white'}`}>
+                          {themeOption.name}
+                        </span>
+                        
+                        {/* Mini Color Palette Selector / Dots */}
+                        <div className="flex gap-1.5 items-center">
+                          {themeOption.colors.map((color, colorIdx) => (
+                            <span 
+                              key={colorIdx}
+                              className="w-3 h-3 rounded-full border border-gray-200 shadow-sm transition-transform duration-300 group-hover:scale-110 dark:border-slate-700" 
+                              style={{ backgroundColor: color }}
+                              title={
+                                colorIdx === 0 ? 'Background' :
+                                colorIdx === 1 ? 'Surface Card' :
+                                colorIdx === 2 ? 'Accent Color' : 'Text Primary'
+                              }
+                            />
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Active Indicator Checkmark */}
-                  {isSelected && (
-                    <span className="w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30">
-                      <Check size={8} className="stroke-[3.5px]" />
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+                    {/* Active Indicator Checkmark */}
+                    {isSelected && (
+                      <span className="w-6 h-6 rounded-full bg-emerald-500 text-white shadow-md shadow-emerald-500/20 flex items-center justify-center shrink-0">
+                        <Check size={12} className="stroke-[3px]" />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

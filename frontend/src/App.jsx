@@ -2,8 +2,8 @@ import React from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Navbar from './SharedComponents/Navbar';
+import FloatingChatbot from './SharedComponents/FloatingChatbot';
 import ImageUploadForm from './FarmerModule/ImageUploadForm';
-import History from './FarmerModule/History';
 import Profile from './FarmerModule/Profile';
 import WeatherAlerts from './FarmerModule/WeatherAlerts';
 import Settings from './FarmerModule/Settings';
@@ -15,14 +15,14 @@ import { LanguageProvider, useLanguage } from './Context/LanguageContext';
 import FertilizerCalculator from './FarmerModule/Tools/FertilizerCalculator';
 import WeatherForecastTool from './FarmerModule/Tools/WeatherForecastTool';
 import MarketPrices from './FarmerModule/Tools/MarketPrices';
-import SoilHealthCheck from './FarmerModule/Tools/SoilHealthCheck';
 import ImpactSimulator from './FarmerModule/Tools/ImpactSimulator';
 import FutureGrowthSimulator from './FarmerModule/Tools/FutureGrowthSimulator';
 import DiseaseSpreadSimulator from './FarmerModule/Tools/DiseaseSpreadSimulator';
 import ResearchViewer from './FarmerModule/Research/ResearchViewer';
-import AIFarmingAssistant from './FarmerModule/Tools/AIFarmingAssistant';
 import ClimateRiskPredictor from './FarmerModule/Tools/ClimateRiskPredictor';
 import CropCalendar from './FarmerModule/Tools/CropCalendar';
+import GovernmentSchemes from './FarmerModule/Tools/GovernmentSchemes';
+import OrganicFarmingGuide from './FarmerModule/Tools/OrganicFarmingGuide';
 
 import FarmingChatBot from './FarmerModule/FarmingChatBot';
 
@@ -41,18 +41,16 @@ function AppContent() {
 
       {location.pathname !== '/login' && location.pathname !== '/register' && <Navbar />}
 
-      <main className={`relative z-10 ${location.pathname === '/login' || location.pathname === '/register' ? '' : 'pt-3 pb-8 md:pb-24 px-4 sm:px-6 lg:px-8 max-w-[1920px] mx-auto'}`}>
+      {/* Floating AI Chatbot - available on all pages except login/register */}
+      {location.pathname !== '/login' && location.pathname !== '/register' && <FloatingChatbot />}
+
+      <main className={`relative z-10 ${location.pathname === '/login' || location.pathname === '/register' ? '' : 'pt-3 pb-3 px-4 sm:px-6 lg:px-8 max-w-[1920px] mx-auto'}`}>
         <Routes>
           <Route path="/" element={
             <ProtectedRoute>
               <>
                 <ImageUploadForm />
               </>
-            </ProtectedRoute>
-          } />
-          <Route path="/history" element={
-            <ProtectedRoute>
-              <History />
             </ProtectedRoute>
           } />
           <Route path="/login" element={<LoginPage />} />
@@ -92,11 +90,7 @@ function AppContent() {
               <MarketPrices />
             </ProtectedRoute>
           } />
-          <Route path="/tools/soil-health" element={
-            <ProtectedRoute>
-              <SoilHealthCheck />
-            </ProtectedRoute>
-          } />
+
           <Route path="/tools/impact-simulator" element={
             <ProtectedRoute>
               <ImpactSimulator />
@@ -122,11 +116,6 @@ function AppContent() {
               <ResearchViewer />
             </ProtectedRoute>
           } />
-          <Route path="/tools/ai-farming-assistant" element={
-            <ProtectedRoute>
-              <AIFarmingAssistant />
-            </ProtectedRoute>
-          } />
           <Route path="/tools/climate-risk" element={
             <ProtectedRoute>
               <ClimateRiskPredictor />
@@ -137,16 +126,20 @@ function AppContent() {
               <CropCalendar />
             </ProtectedRoute>
           } />
+          <Route path="/tools/government-schemes" element={
+            <ProtectedRoute>
+              <GovernmentSchemes />
+            </ProtectedRoute>
+          } />
+          <Route path="/tools/organic-guide" element={
+            <ProtectedRoute>
+              <OrganicFarmingGuide />
+            </ProtectedRoute>
+          } />
         </Routes>
       </main>
 
-      {location.pathname !== '/login' && location.pathname !== '/register' && (
-        <footer className="relative md:fixed bottom-0 left-0 right-0 z-50 bg-white/70 backdrop-blur-xl border-t border-gray-100 dark:bg-slate-900/70 dark:border-slate-800">
-          <div className="max-w-[1920px] mx-auto py-4 px-4 text-center">
-            <p className="text-sm text-gray-400 font-bold tracking-tight dark:text-slate-500">{t('footer')}</p>
-          </div>
-        </footer>
-      )}
+
     </div>
   );
 }

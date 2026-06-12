@@ -57,5 +57,6 @@ router.get('/tools/market-sentiment', toolsController.marketSentiment);
 router.post('/assistant/chat', aiFarmingAssistant.handleChat);
 router.post('/assistant/analyze-image', upload.single('image'), aiFarmingAssistant.handleImageAnalysis);
 router.get('/assistant/suggestions', aiFarmingAssistant.getSuggestedQuestions);
+router.post('/assistant/explain-result', aiFarmingAssistant.explainResult);
 
 module.exports = router;

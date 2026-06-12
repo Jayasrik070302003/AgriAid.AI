@@ -105,30 +105,32 @@ const FutureGrowthSimulator = () => {
         <div className="max-w-7xl mx-auto px-4 pb-12 min-h-screen">
 
             {/* ── Hero ─────────────────────────────────────────── */}
-            <div className="relative overflow-hidden rounded-2xl mt-4 mb-5 px-6 py-7
+            <div className="relative overflow-hidden rounded-2xl mt-4 mb-5 px-4 sm:px-6 py-5 sm:py-7
                 bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-600">
                 <div className="absolute inset-0 opacity-10"
                     style={{backgroundImage:`url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='1' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E")`}}/>
-                <div className="absolute top-0 right-0 w-72 h-72 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4"/>
+                <div className="absolute top-0 right-0 w-48 sm:w-72 h-48 sm:h-72 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4"/>
 
-                <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-sm">
-                            <TrendingUp className="h-5 w-5 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-bold text-white tracking-tight">
-                                Growth <span className="text-violet-200">Simulator</span>
-                            </h1>
-                            <p className="text-[12px] text-white/70 mt-0.5 flex items-center gap-1.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"/>
-                                AI-Powered 90-Day Yield Trajectory
-                            </p>
+                <div className="relative flex flex-col gap-3 sm:gap-4">
+                    <div className="flex items-start sm:items-center justify-between gap-3">
+                        <div className="flex items-start sm:items-center gap-2.5 sm:gap-3 flex-1 min-w-0">
+                            <div className="p-2 sm:p-2.5 bg-white/20 rounded-xl backdrop-blur-sm shrink-0">
+                                <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h1 className="text-lg sm:text-2xl font-bold text-white tracking-tight truncate">
+                                    Growth <span className="text-violet-200">Simulator</span>
+                                </h1>
+                                <p className="text-[11px] sm:text-[12px] text-white/70 mt-0.5 flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0"/>
+                                    <span className="line-clamp-1">AI-Powered 90-Day Yield Trajectory</span>
+                                </p>
+                            </div>
                         </div>
                     </div>
 
                     {/* Toggle Tabs */}
-                    <div className="flex items-center gap-1 p-1 bg-white/15 backdrop-blur-sm rounded-xl border border-white/20">
+                    <div className="flex items-center gap-1 p-1 bg-white/15 backdrop-blur-sm rounded-xl border border-white/20 w-full sm:w-auto">
                         {[
                             { id: 'simulate', label: 'New Simulation', icon: Zap },
                             { id: 'history',  label: 'History',        icon: History },
@@ -137,14 +139,14 @@ const FutureGrowthSimulator = () => {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={clsx(
-                                    "flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-200",
+                                    "flex-1 sm:flex-initial flex items-center justify-center sm:justify-start gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-lg text-[12px] sm:text-[13px] font-medium transition-all duration-200",
                                     activeTab === tab.id
                                         ? "bg-white text-indigo-700 shadow-sm"
                                         : "text-white/70 hover:text-white hover:bg-white/10"
                                 )}
                             >
                                 <tab.icon className="w-3.5 h-3.5" />
-                                {tab.label}
+                                <span className="hidden sm:inline">{tab.label}</span>
                             </button>
                         ))}
                     </div>

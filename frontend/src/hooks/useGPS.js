@@ -19,7 +19,7 @@ const useGPS = () => {
         navigator.geolocation.getCurrentPosition(
             async ({ coords }) => {
                 try {
-                    const res = await apiClient.get(`/api/farmer/reverse-geocode?lat=${coords.latitude}&lng=${coords.longitude}`);
+                    const res = await apiClient.get(`/reverse-geocode?lat=${coords.latitude}&lng=${coords.longitude}`);
                     const d = res.data.data;
                     setLocation({
                         lat: coords.latitude,

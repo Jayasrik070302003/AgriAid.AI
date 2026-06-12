@@ -19,11 +19,11 @@ export const GlobalStateProvider = ({ children }) => {
         console.log(`[Global Sync] Path changed to: ${location.pathname}. Syncing data...`);
         try {
             const [historyRes, groupsRes, simRes, growthRes, spreadRes] = await Promise.all([
-                apiClient.get(`/api/farmer/history`),
-                apiClient.get(`/api/farmer/crop-groups`),
-                apiClient.get(`/api/farmer/simulator/history`),
-                apiClient.get(`/api/farmer/future-growth/history`),
-                apiClient.get(`/api/farmer/spread-risk/history`)
+                apiClient.get(`/history`),
+                apiClient.get(`/crop-groups`),
+                apiClient.get(`/simulator/history`),
+                apiClient.get(`/future-growth/history`),
+                apiClient.get(`/spread-risk/history`)
             ]);
 
             const hData = historyRes.data.data || historyRes.data;

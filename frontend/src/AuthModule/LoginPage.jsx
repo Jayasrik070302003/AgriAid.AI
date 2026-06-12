@@ -70,8 +70,8 @@ const LoginPage = () => {
                 <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-teal-600/20 rounded-full mix-blend-screen filter blur-[120px] animate-pulse opacity-40 animation-delay-4000" />
             </div>
 
-            {/* 2. Brand Logo (Top Left) */}
-            <div className="absolute top-6 left-6 md:top-8 md:left-8 z-30">
+            {/* 2. Brand Logo (Top Left - Desktop Only) */}
+            <div className="absolute top-6 left-6 md:top-8 md:left-8 z-30 hidden md:block">
                 <Link to="/" className="flex items-center gap-3 group">
                     <div className="bg-white/5 backdrop-blur-md border border-white/10 p-2.5 rounded-xl group-hover:bg-emerald-500/20 transition-all duration-300 shadow-2xl shadow-black/20">
                         <Leaf className="h-6 w-6 text-emerald-400 group-hover:text-emerald-300 transition-colors" />
@@ -86,12 +86,12 @@ const LoginPage = () => {
             </div>
 
             {/* 3. Glassmorphism Login Card */}
-            <div className="w-full max-w-[380px] md:max-w-[480px] px-4 relative z-20">
+            <div className="w-full max-w-[380px] md:max-w-[440px] px-4 relative z-20">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95, y: 30 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     transition={{ duration: 0.6, ease: "easeOut" }}
-                    className="bg-black/40 backdrop-blur-xl rounded-[24px] shadow-2xl shadow-black/60 p-6 md:p-10 border border-white/10 relative overflow-hidden"
+                    className="bg-black/50 backdrop-blur-2xl rounded-3xl shadow-2xl shadow-black/80 p-7 md:p-10 border border-white/10 relative overflow-hidden"
                 >
                     {/* Glowing Top Border */}
                     <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
@@ -101,12 +101,16 @@ const LoginPage = () => {
                             initial={{ y: -10, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             transition={{ delay: 0.2 }}
-                            className="inline-flex flex-col items-center justify-center"
+                            className="inline-flex flex-col items-center justify-center w-full"
                         >
-                            <div className="w-16 h-16 bg-gradient-to-br from-emerald-500/20 to-teal-500/10 rounded-2xl flex items-center justify-center text-emerald-400 mb-4 shadow-lg border border-emerald-500/20 ring-4 ring-emerald-500/5">
-                                <Sprout className="h-8 w-8 drop-shadow-md" />
+                            <div className="md:hidden flex items-center gap-2 mb-6">
+                                <Leaf className="h-5 w-5 text-emerald-400" />
+                                <span className="text-lg font-bold tracking-tight text-white leading-none">
+                                    AgriAid<span className="text-emerald-400">.AI</span>
+                                </span>
                             </div>
-                            <h2 className="text-2xl md:text-3xl font-bold text-white tracking-tight drop-shadow-sm">
+                            
+                            <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-sm">
                                 {t('login_welcome')}
                             </h2>
                             <p className="text-emerald-100/60 text-xs md:text-sm mt-2 font-medium">
@@ -119,7 +123,7 @@ const LoginPage = () => {
                         <motion.div
                             initial={{ opacity: 0, y: -8 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="mb-4 flex items-start gap-3 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3"
+                            className="mb-5 flex items-start gap-3 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3"
                         >
                             <span className="text-red-400 mt-0.5">⚠️</span>
                             <p className="text-red-300 text-sm font-medium">{error}</p>
@@ -141,7 +145,7 @@ const LoginPage = () => {
                                     required
                                     value={formData.email}
                                     onChange={handleChange}
-                                    className="block w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-emerald-100/20 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-300 backdrop-blur-sm sm:text-sm shadow-inner hover:bg-white/10"
+                                    className="block w-full pl-11 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-emerald-100/20 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-300 backdrop-blur-sm sm:text-sm shadow-inner hover:bg-white/10 [&:-webkit-autofill]:bg-transparent [&:-webkit-autofill]:[-webkit-text-fill-color:white] [&:-webkit-autofill]:[transition:background-color_9999s_ease-in-out_0s]"
                                     placeholder="farmer@example.com"
                                 />
                             </div>
@@ -170,7 +174,7 @@ const LoginPage = () => {
                                     required
                                     value={formData.password}
                                     onChange={handleChange}
-                                    className="block w-full pl-12 pr-12 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-emerald-100/20 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-300 backdrop-blur-sm sm:text-sm shadow-inner hover:bg-white/10"
+                                    className="block w-full pl-11 pr-12 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-emerald-100/20 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-300 backdrop-blur-sm sm:text-sm shadow-inner hover:bg-white/10 [&:-webkit-autofill]:bg-transparent [&:-webkit-autofill]:[-webkit-text-fill-color:white] [&:-webkit-autofill]:[transition:background-color_9999s_ease-in-out_0s]"
                                     placeholder="••••••••"
                                 />
                                 <button

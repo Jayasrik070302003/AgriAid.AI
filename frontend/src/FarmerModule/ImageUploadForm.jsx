@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
     UploadCloud, CheckCircle2, AlertCircle, Loader2, Sprout, MapPin, RefreshCw, 
-    Camera, X, CloudSun, ThermometerSun, Mic, Beaker, ChevronDown, 
+    Camera, X, CloudSun, ThermometerSun, Beaker, ChevronDown, 
     ChevronUp, Volume2, VolumeX, Check, ScanLine, Tractor, ArrowRight, Activity, 
     Lock, Unlock, ShieldCheck, Leaf, Compass, CheckCircle, Search, HelpCircle, AlertTriangle, Sparkles
 } from 'lucide-react';
@@ -22,7 +22,7 @@ const PIPELINE_STAGES = [
 ];
 
 const ImageUploadForm = () => {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const { isDarkMode } = useTheme();
     const { refreshGlobalData } = useGlobalState();
 
@@ -92,7 +92,6 @@ const ImageUploadForm = () => {
     const [confidenceMode, setConfidenceMode] = useState('none'); // 'none' | 'confirm' | 'low_confidence'
 
     // UI Interactive States
-    const [isListening, setIsListening] = useState(false);
     const [isCameraOpen, setIsCameraOpen] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
 
@@ -159,7 +158,7 @@ const ImageUploadForm = () => {
     const fetchAISoilProfile = async (locData) => {
         setIsFetchingSoil(true);
         try {
-            const response = await apiClient.post(`/api/farmer/soil-profile`, locData);
+            const response = await apiClient.post(`/soil-profile`, locData);
             if (response.data && response.data.success && response.data.data) {
                 setEstimatedSoil(response.data.data);
             }
@@ -511,7 +510,7 @@ const ImageUploadForm = () => {
         setIsWaitingToSearch(false);
         setIsSuggesting(true);
         try {
-            const res = await apiClient.get(`/api/farmer/crop-suggestions?q=${encodeURIComponent(query.trim())}`);
+            const res = await apiClient.get(`/crop-suggestions?q=${encodeURIComponent(query.trim())}`);
             if (res.data && res.data.success) {
                 setSuggestions(res.data.data || []);
                 setShowSuggestions(true);
@@ -654,7 +653,7 @@ const ImageUploadForm = () => {
         formData.append('elevation', elevation || '');
 
         try {
-            const response = await apiClient.post(`/api/farmer/analyze`, formData, {
+            const response = await apiClient.post(`/analyze`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
@@ -753,7 +752,7 @@ const ImageUploadForm = () => {
         formData.append('elevation', elevation || '');
 
         try {
-            const response = await apiClient.post(`/api/farmer/analyze`, formData, {
+            const response = await apiClient.post(`/analyze`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
@@ -781,51 +780,7 @@ const ImageUploadForm = () => {
         setPendingAnalysis(null);
     };
 
-    const handleVoiceInput = () => {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            toast.error("Voice inputs are not supported in this browser.");
-            return;
-        }
 
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'en-IN';
-        recognition.interimResults = false;
-
-        recognition.onstart = () => {
-            setIsListening(true);
-            toast.loading("Listening for crop species...", { id: 'voice-toast' });
-        };
-
-        recognition.onresult = async (event) => {
-            const transcript = event.results[0][0].transcript.toLowerCase();
-            toast.loading(`Processing query: "${transcript}"...`, { id: 'voice-toast' });
-            
-            try {
-                const res = await apiClient.get(`/api/farmer/crop-suggestions?q=${encodeURIComponent(transcript)}`);
-                if (res.data && res.data.success && res.data.data && res.data.data.length > 0) {
-                    const matched = res.data.data[0];
-                    setSearchQuery(matched.name);
-                    setCropType(matched.name);
-                    setScientificName(matched.scientific);
-                    setFarmingType(matched.category);
-                    toast.success(`Voice set: ${matched.name}`, { id: 'voice-toast' });
-                } else {
-                    toast("Could not identify crop. Please type manually.", { icon: '🤔', id: 'voice-toast' });
-                }
-            } catch (err) {
-                toast.error("Voice matching failed.", { id: 'voice-toast' });
-            }
-        };
-
-        recognition.onerror = () => {
-            setIsListening(false);
-            toast.error("Voice connection failed.", { id: 'voice-toast' });
-        };
-
-        recognition.onend = () => setIsListening(false);
-        recognition.start();
-    };
 
     const speakAdvice = (text) => {
         if (!window.speechSynthesis) return;
@@ -911,18 +866,6 @@ const ImageUploadForm = () => {
                             <span className="text-[10px] text-teal-400 font-semibold uppercase tracking-widest">Crop Diagnosis</span>
                         </div>
                     </div>
-                    <button
-                        onClick={handleVoiceInput}
-                        className={clsx(
-                            "shrink-0 p-2 rounded-xl border transition-all active:scale-95",
-                            isListening
-                                ? "bg-red-500 border-red-400 text-white animate-pulse"
-                                : "bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-white"
-                        )}
-                        title="Voice Input"
-                    >
-                        <Mic className="w-4 h-4" />
-                    </button>
                 </div>
 
                 {/* ── Location Panel ── */}
@@ -1583,31 +1526,8 @@ const ImageUploadForm = () => {
                                 </div>
                             </div>
 
-                            {/* 6. AI Chat Suggestions */}
-                            {txResult.chatSuggestions && txResult.chatSuggestions.length > 0 && (
-                                <div className="space-y-3">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">AI Assistant Chat Suggestions</span>
-                                    <div className="flex flex-wrap gap-2">
-                                        {txResult.chatSuggestions.map((suggestion, idx) => (
-                                            <button
-                                                key={idx}
-                                                type="button"
-                                                onClick={() => {
-                                                    window.dispatchEvent(new CustomEvent('triggerChatQuery', { detail: { query: suggestion } }));
-                                                    toast.success("Opening Farmer Chat Assistant...");
-                                                }}
-                                                className="bg-white/5 hover:bg-teal-500/10 border border-slate-200 dark:border-white/10 hover:border-teal-500/30 text-slate-300 hover:text-white px-4 py-2.5 rounded-2xl text-[11px] font-bold transition-all text-left flex items-center gap-2 group"
-                                            >
-                                                <Sparkles className="w-3.5 h-3.5 text-teal-400 group-hover:scale-110 transition-transform" />
-                                                <span>{suggestion}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
                             {/* Expert Clinical Commentary footer */}
-                            <div className="bg-slate-50 dark:bg-[#050C16] border border-slate-200 dark:border-white/10 p-5 md:p-6 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div className="bg-slate-50 dark:bg-[#050C16] border border-slate-200 dark:border-white/10 p-5 md:p-6 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-20 sm:mb-6">
                                 <div className="flex gap-4 items-start flex-1">
                                     <div className="p-3 bg-slate-100 dark:bg-[#0A1628] rounded-2xl border border-slate-100 dark:border-white/5 text-teal-400 shrink-0">
                                         <Activity className="w-5 h-5 animate-pulse" />
@@ -1620,28 +1540,29 @@ const ImageUploadForm = () => {
                                     </div>
                                 </div>
 
-                                <div className="shrink-0 flex items-center gap-3 w-full md:w-auto">
+                                <div className="shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full md:w-auto">
                                     <button
                                         type="button"
                                         onClick={() => isSpeaking ? stopSpeaking() : speakAdvice(`${txResult.diseaseName}. ${txResult.instructions}`)}
                                         className={clsx(
-                                            "flex-1 md:flex-initial py-3.5 px-6 rounded-xl text-[10px] uppercase font-bold tracking-widest flex items-center justify-center gap-2 border transition-all",
+                                            "py-2.5 sm:py-3 px-4 sm:px-5 rounded-xl text-[9px] sm:text-[10px] uppercase font-bold tracking-wide sm:tracking-widest flex items-center justify-center gap-2 border transition-all",
                                             isSpeaking 
                                                 ? "bg-rose-500 border-rose-400 text-white animate-pulse" 
                                                 : "bg-slate-100 dark:bg-[#0A1628]/60 border-slate-200 dark:border-white/10 text-slate-300 hover:bg-slate-800/40"
                                         )}
                                     >
-                                        {isSpeaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                                        {isSpeaking ? "Pause Audio" : "Listen Advice"}
+                                        {isSpeaking ? <VolumeX className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+                                        {isSpeaking ? "Pause" : "Listen"}
                                     </button>
 
                                     <button
                                         type="button"
                                         onClick={resetForm}
-                                        className="py-3.5 px-6 rounded-xl text-[10px] uppercase font-bold tracking-widest bg-white/5 hover:bg-white/10 border border-slate-200 dark:border-white/10 text-white transition-all flex items-center gap-2 justify-center"
+                                        className="py-2.5 sm:py-3 px-4 sm:px-5 rounded-xl text-[9px] sm:text-[10px] uppercase font-bold tracking-wide sm:tracking-widest bg-white/5 hover:bg-white/10 border border-slate-200 dark:border-white/10 text-white transition-all flex items-center gap-2 justify-center"
                                     >
-                                        <RefreshCw className="w-4 h-4" />
-                                        Scan Another
+                                        <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                        <span className="hidden sm:inline">Scan Another</span>
+                                        <span className="sm:hidden">Scan</span>
                                     </button>
                                 </div>
                             </div>
@@ -1699,6 +1620,177 @@ const ImageUploadForm = () => {
                 </AnimatePresence>
             </div>
             
+        </div>
+    );
+};
+
+// ── Explain Result AI Assistant Component ──
+const ExplainResultAssistant = ({ result, language }) => {
+    const [messages, setMessages] = useState([]);
+    const [input, setInput] = useState('');
+    const [loading, setLoading] = useState(false);
+    const bottomRef = React.useRef(null);
+
+    const langName = language === 'TA' ? 'Tamil' : language === 'HI' ? 'Hindi' : 'English';
+
+    const placeholder = language === 'TA'
+        ? 'இந்த முடிவில் உள்ள வார்த்தைகளை கேளுங்கள்...'
+        : language === 'HI'
+            ? 'इस रिपोर्ट के बारे में कोई भी शब्द पूछें...'
+            : 'Ask about any word or term in this result...';
+
+    const greeting = language === 'TA'
+        ? `வணக்கம்! இந்த பயிர் பகுப்பாய்வு முடிவில் உள்ள எந்த வார்த்தையையும் எளிய மொழியில் விளக்குகிறேன். கேளுங்கள்!`
+        : language === 'HI'
+            ? `नमस्ते! इस फसल विश्लेषण रिपोर्ट में किसी भी शब्द, रोग नाम, उपाय, या सिफारिश के बारे में सरल भाषा में समझाता हूँ।`
+            : `Hi! I can explain any word, disease name, confidence score, fertilizer, or recommendation from this analysis in simple language. What would you like to know?`;
+
+    const quickQuestions = language === 'TA'
+        ? [
+            `"${result?.diseaseName}" என்றால் என்ன?`,
+            'நம்பிக்கை மதிப்பெண் என்றால் என்ன?',
+            'கரிம தீர்வு எப்படி பயன்படுத்துவது?',
+            'உரம் எந்த அளவு போட வேண்டும்?',
+        ]
+        : language === 'HI'
+            ? [
+                `"${result?.diseaseName}" का मतलब क्या है?`,
+                'कॉन्फिडेंस स्कोर क्या होता है?',
+                'जैविक उपाय कैसे उपयोग करें?',
+                'उर्वरक की मात्रा कितनी डालें?',
+            ]
+            : [
+                `What is "${result?.diseaseName}"?`,
+                'What does confidence score mean?',
+                'How do I use organic solutions?',
+                `What dosage is safe for ${result?.fertilizer}?`,
+            ];
+
+    React.useEffect(() => {
+        setMessages([{ role: 'bot', text: greeting }]);
+    }, [language]);
+
+    React.useEffect(() => {
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
+
+    const ask = async (question) => {
+        if (!question.trim() || loading) return;
+        const userMsg = { role: 'user', text: question };
+        setMessages(prev => [...prev, userMsg]);
+        setInput('');
+        setLoading(true);
+
+        const context = result ? {
+            diseaseName: result.diseaseName,
+            confidence: result.confidence,
+            cureMethods: result.cureMethods,
+            organicSolutions: result.organicSolutions,
+            fertilizerSuggestions: result.fertilizerSuggestions,
+            irrigationAdvice: result.irrigationAdvice,
+            yieldProtectionAdvice: result.yieldProtectionAdvice,
+        } : {};
+
+        try {
+            const res = await apiClient.post('/assistant/explain-result', {
+                question,
+                language: language === 'TA' ? 'TA' : language === 'HI' ? 'HI' : 'EN',
+                context,
+            });
+            setMessages(prev => [...prev, { role: 'bot', text: res.data.reply }]);
+        } catch {
+            const fallback = language === 'TA'
+                ? 'மன்னிக்கவும், இப்போது பதில் சொல்ல முடியவில்லை.'
+                : language === 'HI'
+                    ? 'माफ़ करें, अभी उत्तर नहीं दे पा रहा।'
+                    : 'Sorry, could not get an answer right now. Please try again.';
+            setMessages(prev => [...prev, { role: 'bot', text: fallback }]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const title = language === 'TA' ? 'முடிவை விளக்கு' : language === 'HI' ? 'परिणाम समझें' : 'Explain Result';
+    const askLabel = language === 'TA' ? 'கேளுங்கள்' : language === 'HI' ? 'पूछें' : 'Ask';
+
+    return (
+        <div className="bg-slate-50 dark:bg-[#050C16] border border-slate-200 dark:border-white/10 rounded-3xl overflow-hidden shadow-lg">
+            {/* Header */}
+            <div className="flex items-center gap-3 px-5 py-3.5 border-b border-slate-200 dark:border-white/5 bg-white/60 dark:bg-black/20">
+                <div className="p-1.5 bg-teal-500/10 rounded-lg">
+                    <HelpCircle className="w-4 h-4 text-teal-400" />
+                </div>
+                <div>
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-white leading-none">{title}</h3>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                        {language === 'TA' ? 'இந்த முடிவில் உள்ள எந்த வார்த்தையையும் கேளுங்கள்'
+                            : language === 'HI' ? 'रिपोर्ट के किसी भी शब्द के बारे में पूछें'
+                            : 'Ask about any term or recommendation in simple language'}
+                    </p>
+                </div>
+                <div className="ml-auto flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
+                    <span className="text-[9px] font-bold text-teal-400 uppercase tracking-widest">AI</span>
+                </div>
+            </div>
+
+            {/* Quick questions */}
+            <div className="flex flex-wrap gap-2 px-5 pt-3 pb-1">
+                {quickQuestions.map((q, i) => (
+                    <button key={i} onClick={() => ask(q)} disabled={loading}
+                        className="text-[10px] font-semibold px-3 py-1.5 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-full text-slate-600 dark:text-slate-300 hover:border-teal-500/40 hover:text-teal-600 dark:hover:text-teal-400 transition-all disabled:opacity-50">
+                        {q}
+                    </button>
+                ))}
+            </div>
+
+            {/* Messages */}
+            <div className="px-5 py-3 space-y-3 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700">
+                {messages.map((msg, i) => (
+                    <div key={i} className={`flex gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                        <div className={`w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-white text-[10px] font-bold ${
+                            msg.role === 'user' ? 'bg-teal-500' : 'bg-slate-700 dark:bg-slate-800'
+                        }`}>
+                            {msg.role === 'user' ? '👤' : '🌾'}
+                        </div>
+                        <div className={`max-w-[82%] px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed ${
+                            msg.role === 'user'
+                                ? 'bg-teal-500 text-white rounded-tr-sm'
+                                : 'bg-white dark:bg-slate-800/60 border border-slate-100 dark:border-white/5 text-slate-700 dark:text-slate-200 rounded-tl-sm'
+                        }`}>
+                            {msg.text}
+                        </div>
+                    </div>
+                ))}
+                {loading && (
+                    <div className="flex gap-2.5">
+                        <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-[10px]">🌾</div>
+                        <div className="bg-white dark:bg-slate-800/60 border border-slate-100 dark:border-white/5 rounded-2xl rounded-tl-sm px-4 py-2.5 flex gap-1.5 items-center">
+                            {[0,1,2].map(i => (
+                                <motion.div key={i} className="w-1.5 h-1.5 rounded-full bg-teal-400"
+                                    animate={{ y: [0, -4, 0] }} transition={{ duration: 0.7, repeat: Infinity, delay: i * 0.15 }} />
+                            ))}
+                        </div>
+                    </div>
+                )}
+                <div ref={bottomRef} />
+            </div>
+
+            {/* Input */}
+            <div className="px-5 py-3 border-t border-slate-200 dark:border-white/5 flex gap-2">
+                <input
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && ask(input)}
+                    placeholder={placeholder}
+                    disabled={loading}
+                    className="flex-1 bg-white dark:bg-black/30 border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-teal-500 transition-all"
+                />
+                <button onClick={() => ask(input)} disabled={loading || !input.trim()}
+                    className="px-4 py-2.5 bg-teal-500 hover:bg-teal-400 disabled:opacity-40 text-white text-xs font-bold rounded-xl transition-all shrink-0">
+                    {askLabel}
+                </button>
+            </div>
         </div>
     );
 };

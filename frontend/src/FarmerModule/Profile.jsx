@@ -56,7 +56,7 @@ const Profile = () => {
     };
 
     return (
-        <div className="max-w-6xl mx-auto space-y-8 relative">
+        <div className="max-w-5xl mx-auto space-y-5 relative">
             {/* Success Notification */}
             <AnimatePresence>
                 {showSuccess && (
@@ -64,20 +64,20 @@ const Profile = () => {
                         initial={{ opacity: 0, y: -50, x: '-50%' }}
                         animate={{ opacity: 1, y: 0, x: '-50%' }}
                         exit={{ opacity: 0, y: -50, x: '-50%' }}
-                        className="fixed top-24 left-1/2 z-50 flex items-center gap-3 bg-white px-6 py-4 rounded-2xl shadow-2xl shadow-green-500/20 border border-green-100 dark:bg-slate-800 dark:border-green-900/30 dark:shadow-none"
+                        className="fixed top-20 left-1/2 z-50 flex items-center gap-2.5 bg-white px-4 py-3 rounded-xl shadow-2xl shadow-green-500/20 border border-green-100 dark:bg-slate-800 dark:border-green-900/30 dark:shadow-none"
                     >
-                        <div className="bg-green-100 p-2 rounded-full dark:bg-green-900/30">
-                            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                        <div className="bg-green-100 p-1.5 rounded-full dark:bg-green-900/30">
+                            <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                         </div>
                         <div>
-                            <h4 className="text-sm font-bold text-gray-900 dark:text-white">Success</h4>
-                            <p className="text-xs text-gray-500 dark:text-slate-400">Profile updated successfully!</p>
+                            <h4 className="text-xs font-bold text-gray-900 dark:text-white">Success</h4>
+                            <p className="text-[10px] text-gray-500 dark:text-slate-400">Profile updated successfully!</p>
                         </div>
                         <button
                             onClick={() => setShowSuccess(false)}
-                            className="ml-4 p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors dark:hover:bg-slate-700 dark:text-slate-500 dark:hover:text-white"
+                            className="ml-3 p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors dark:hover:bg-slate-700 dark:text-slate-500 dark:hover:text-white"
                         >
-                            <X className="h-4 w-4" />
+                            <X className="h-3 w-3" />
                         </button>
                     </motion.div>
                 )}
@@ -87,31 +87,31 @@ const Profile = () => {
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 relative overflow-hidden dark:bg-slate-800 dark:border-slate-700"
+                className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 relative overflow-hidden dark:bg-slate-800 dark:border-slate-700"
             >
-                <div className="absolute top-0 right-0 w-64 h-64 bg-farm-green/5 rounded-bl-full -mr-16 -mt-16 z-0" />
+                <div className="absolute top-0 right-0 w-48 h-48 bg-farm-green/5 rounded-bl-full -mr-12 -mt-12 z-0" />
 
-                <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-8">
+                <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-6">
                     {/* Avatar */}
                     <div className="relative group cursor-pointer" onClick={() => isEditing && fileInputRef.current.click()}>
-                        <div className="w-32 h-32 rounded-full border-4 border-white shadow-lg bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center overflow-hidden relative">
+                        <div className="w-20 h-20 rounded-full border-4 border-white shadow-lg bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center overflow-hidden relative">
                             {formData.avatar ? (
                                 <img src={formData.avatar} alt="Profile" className="w-full h-full object-cover" />
                             ) : (
-                                <User className="h-16 w-16 text-gray-400" />
+                                <User className="h-10 w-10 text-gray-400" />
                             )}
 
                             {/* Overlay for Edit Mode */}
                             {isEditing && (
                                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Camera className="h-8 w-8 text-white" />
+                                    <Camera className="h-6 w-6 text-white" />
                                 </div>
                             )}
                         </div>
 
                         {/* Status Icon (Sprout) */}
-                        <div className="absolute bottom-1 right-1 bg-farm-green text-white p-2 rounded-full shadow-lg border-2 border-white pointer-events-none">
-                            <Sprout className="h-4 w-4" />
+                        <div className="absolute bottom-0 right-0 bg-farm-green text-white p-1.5 rounded-full shadow-lg border-2 border-white pointer-events-none">
+                            <Sprout className="h-3 w-3" />
                         </div>
 
                         {/* Hidden File Input */}
@@ -126,20 +126,20 @@ const Profile = () => {
 
                     {/* Info */}
                     <div className="text-center md:text-left flex-1">
-                        <h1 className="text-3xl font-bold text-gray-900 tracking-tight dark:text-white">{formData.name}</h1>
-                        <p className="text-gray-500 mt-1 flex items-center justify-center md:justify-start gap-2 dark:text-slate-400">
-                            <MapPin className="h-4 w-4" /> {formData.location}
+                        <h1 className="text-xl font-bold text-gray-900 tracking-tight dark:text-white">{formData.name}</h1>
+                        <p className="text-gray-500 text-[12px] mt-1 flex items-center justify-center md:justify-start gap-1.5 dark:text-slate-400">
+                            <MapPin className="h-3 w-3" /> {formData.location}
                         </p>
 
                         {/* Stats Grid */}
-                        <div className="grid grid-cols-3 gap-4 mt-8">
+                        <div className="grid grid-cols-3 gap-3 mt-5">
                             {stats.map((stat, idx) => (
-                                <div key={idx} className="bg-gray-50 rounded-2xl p-4 border border-gray-100 dark:bg-slate-700 dark:border-slate-600">
-                                    <div className={`${stat.bg} w-10 h-10 rounded-xl flex items-center justify-center mb-3 mx-auto md:mx-0`}>
-                                        <stat.icon className={`h-5 w-5 ${stat.color}`} />
+                                <div key={idx} className="bg-gray-50 rounded-xl p-3 border border-gray-100 dark:bg-slate-700 dark:border-slate-600">
+                                    <div className={`${stat.bg} w-8 h-8 rounded-lg flex items-center justify-center mb-2 mx-auto md:mx-0`}>
+                                        <stat.icon className={`h-4 w-4 ${stat.color}`} />
                                     </div>
-                                    <div className="text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</div>
-                                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wide dark:text-slate-400">{t(stat.label)}</div>
+                                    <div className="text-lg font-bold text-gray-900 dark:text-white">{stat.value}</div>
+                                    <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide dark:text-slate-400">{t(stat.label)}</div>
                                 </div>
                             ))}
                         </div>
@@ -152,28 +152,32 @@ const Profile = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden dark:bg-slate-800 dark:border-slate-700"
+                className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden dark:bg-slate-800 dark:border-slate-700"
             >
-                <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 dark:bg-slate-800/50 dark:border-slate-700">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('profile_details')}</h2>
+                <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 dark:bg-slate-800/50 dark:border-slate-700">
+                    <h2 className="text-base font-bold text-gray-900 dark:text-white">{t('profile_details')}</h2>
                     <button
                         onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-                        className={`px-6 py-2 rounded-xl text-sm font-semibold transition-all shadow-sm ${isEditing
+                        className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all shadow-sm flex items-center gap-2 ${isEditing
                             ? 'bg-farm-green text-white hover:bg-emerald-600 shadow-green-200 dark:hover:bg-emerald-500'
                             : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 dark:bg-slate-700 dark:text-white dark:border-slate-600 dark:hover:bg-slate-600'
                             }`}
                     >
-                        {isEditing ? t('profile_save') : 'Edit Profile'}
+                        {isEditing ? (
+                            <><Save className="h-3.5 w-3.5" /> {t('profile_save')}</>
+                        ) : (
+                            <><User className="h-3.5 w-3.5" /> Edit Profile</>
+                        )}
                     </button>
                 </div>
 
-                <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
                     {/* Name */}
-                    <div className="space-y-2">
-                        <label className="text-sm font-semibold text-gray-700 ml-1 dark:text-slate-300">{t('profile_name')}</label>
+                    <div className="space-y-1.5">
+                        <label className="text-[11px] font-semibold text-gray-700 ml-1 dark:text-slate-300 uppercase tracking-wider">{t('profile_name')}</label>
                         <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
-                                <User className="h-5 w-5" />
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                <User className="h-4 w-4" />
                             </div>
                             <input
                                 type="text"
@@ -181,17 +185,17 @@ const Profile = () => {
                                 disabled={!isEditing}
                                 value={formData.name}
                                 onChange={handleChange}
-                                className="block w-full pl-11 pr-4 py-3 bg-gray-50 border-transparent rounded-xl focus:bg-white focus:border-farm-green focus:ring-0 transition-all disabled:opacity-60 disabled:cursor-not-allowed font-medium text-gray-900 dark:bg-slate-700 dark:text-white dark:focus:bg-slate-800"
+                                className="block w-full pl-10 pr-3 py-2.5 text-[13px] bg-gray-50 border-transparent rounded-xl focus:bg-white focus:border-farm-green focus:ring-0 transition-all disabled:opacity-60 disabled:cursor-not-allowed font-medium text-gray-900 dark:bg-slate-700 dark:text-white dark:focus:bg-slate-800"
                             />
                         </div>
                     </div>
 
                     {/* Email */}
-                    <div className="space-y-2">
-                        <label className="text-sm font-semibold text-gray-700 ml-1 dark:text-slate-300">{t('profile_email')}</label>
+                    <div className="space-y-1.5">
+                        <label className="text-[11px] font-semibold text-gray-700 ml-1 dark:text-slate-300 uppercase tracking-wider">{t('profile_email')}</label>
                         <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
-                                <Mail className="h-5 w-5" />
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                <Mail className="h-4 w-4" />
                             </div>
                             <input
                                 type="email"
@@ -199,17 +203,17 @@ const Profile = () => {
                                 disabled={!isEditing}
                                 value={formData.email}
                                 onChange={handleChange}
-                                className="block w-full pl-11 pr-4 py-3 bg-gray-50 border-transparent rounded-xl focus:bg-white focus:border-farm-green focus:ring-0 transition-all disabled:opacity-60 disabled:cursor-not-allowed font-medium text-gray-900 dark:bg-slate-700 dark:text-white dark:focus:bg-slate-800"
+                                className="block w-full pl-10 pr-3 py-2.5 text-[13px] bg-gray-50 border-transparent rounded-xl focus:bg-white focus:border-farm-green focus:ring-0 transition-all disabled:opacity-60 disabled:cursor-not-allowed font-medium text-gray-900 dark:bg-slate-700 dark:text-white dark:focus:bg-slate-800"
                             />
                         </div>
                     </div>
 
                     {/* Phone */}
-                    <div className="space-y-2">
-                        <label className="text-sm font-semibold text-gray-700 ml-1 dark:text-slate-300">{t('profile_phone')}</label>
+                    <div className="space-y-1.5">
+                        <label className="text-[11px] font-semibold text-gray-700 ml-1 dark:text-slate-300 uppercase tracking-wider">{t('profile_phone')}</label>
                         <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
-                                <Phone className="h-5 w-5" />
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                <Phone className="h-4 w-4" />
                             </div>
                             <input
                                 type="tel"
@@ -217,17 +221,17 @@ const Profile = () => {
                                 disabled={!isEditing}
                                 value={formData.phone}
                                 onChange={handleChange}
-                                className="block w-full pl-11 pr-4 py-3 bg-gray-50 border-transparent rounded-xl focus:bg-white focus:border-farm-green focus:ring-0 transition-all disabled:opacity-60 disabled:cursor-not-allowed font-medium text-gray-900 dark:bg-slate-700 dark:text-white dark:focus:bg-slate-800"
+                                className="block w-full pl-10 pr-3 py-2.5 text-[13px] bg-gray-50 border-transparent rounded-xl focus:bg-white focus:border-farm-green focus:ring-0 transition-all disabled:opacity-60 disabled:cursor-not-allowed font-medium text-gray-900 dark:bg-slate-700 dark:text-white dark:focus:bg-slate-800"
                             />
                         </div>
                     </div>
 
                     {/* Location */}
-                    <div className="space-y-2">
-                        <label className="text-sm font-semibold text-gray-700 ml-1 dark:text-slate-300">{t('profile_location')}</label>
+                    <div className="space-y-1.5">
+                        <label className="text-[11px] font-semibold text-gray-700 ml-1 dark:text-slate-300 uppercase tracking-wider">{t('profile_location')}</label>
                         <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
-                                <MapPin className="h-5 w-5" />
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                <MapPin className="h-4 w-4" />
                             </div>
                             <input
                                 type="text"
@@ -235,7 +239,7 @@ const Profile = () => {
                                 disabled={!isEditing}
                                 value={formData.location}
                                 onChange={handleChange}
-                                className="block w-full pl-11 pr-4 py-3 bg-gray-50 border-transparent rounded-xl focus:bg-white focus:border-farm-green focus:ring-0 transition-all disabled:opacity-60 disabled:cursor-not-allowed font-medium text-gray-900 dark:bg-slate-700 dark:text-white dark:focus:bg-slate-800"
+                                className="block w-full pl-10 pr-3 py-2.5 text-[13px] bg-gray-50 border-transparent rounded-xl focus:bg-white focus:border-farm-green focus:ring-0 transition-all disabled:opacity-60 disabled:cursor-not-allowed font-medium text-gray-900 dark:bg-slate-700 dark:text-white dark:focus:bg-slate-800"
                             />
                         </div>
                     </div>

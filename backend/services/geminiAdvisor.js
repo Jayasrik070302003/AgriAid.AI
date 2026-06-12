@@ -38,7 +38,6 @@ async function geminiChat(systemPrompt, userMessage, opts = {}) {
     const geminiKeys = [
         process.env.GEMINI_API_KEY,
         process.env.GEMINI_API_KEY_2,
-        process.env.GEMINI_API_KEY_3,
     ].filter(Boolean);
 
     if (geminiKeys.length === 0) throw new Error('No AI API keys available');
@@ -219,7 +218,6 @@ async function geminiParseSoilReport(base64Data, mimeType = "image/jpeg") {
     const geminiKeys = [
         process.env.GEMINI_API_KEY,
         process.env.GEMINI_API_KEY_2,
-        process.env.GEMINI_API_KEY_3,
     ].filter(Boolean);
 
     if (geminiKeys.length === 0) throw new Error('No GEMINI_API_KEY available');

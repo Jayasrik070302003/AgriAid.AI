@@ -9,9 +9,50 @@ import {
 import axios from 'axios';
 import clsx from 'clsx';
 import { useLanguage } from '../../Context/LanguageContext';
+import { Select, MenuItem } from '@mui/material';
 
 import { API_BASE_URL as BASE_URL } from '../../config';
 const API_BASE_URL = `${BASE_URL}/api/farmer`;
+
+const CustomSelect = ({ value, onChange, options, suffix = '' }) => (
+    <Select
+        value={value}
+        onChange={onChange}
+        fullWidth
+        className="w-full h-9 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white text-[12px] focus-within:ring-2 focus-within:ring-emerald-500/30 transition-shadow"
+        sx={{
+            '& .MuiOutlinedInput-notchedOutline': {
+                border: 'none',
+            },
+            '& .MuiSelect-select': {
+                paddingY: '0',
+                display: 'flex',
+                alignItems: 'center',
+                height: '100%',
+                paddingLeft: '12px',
+            },
+            '& .MuiSelect-icon': {
+                color: 'inherit',
+            }
+        }}
+        MenuProps={{
+            PaperProps: {
+                className: "bg-white dark:bg-slate-800 text-slate-800 dark:text-white border border-slate-200 dark:border-slate-700",
+                sx: {
+                    mt: 0.5,
+                    borderRadius: '0.5rem',
+                    boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+                }
+            }
+        }}
+    >
+        {options.map(opt => (
+            <MenuItem key={opt} value={opt} className="text-[12px]" sx={{ minHeight: '36px', fontSize: '12px' }}>
+                {opt}{suffix}
+            </MenuItem>
+        ))}
+    </Select>
+);
 
 const ImpactSimulator = () => {
     const { t, language } = useLanguage();
@@ -136,29 +177,29 @@ const ImpactSimulator = () => {
         <div className="max-w-7xl mx-auto px-4 pb-12 min-h-screen impact-simulator-container">
             
             {/* ── Hero ─────────────────────────────────────────── */}
-            <div className="relative overflow-hidden rounded-2xl mt-4 mb-5 px-6 py-7
+            <div className="relative overflow-hidden rounded-2xl mt-4 mb-5 px-4 sm:px-6 py-5 sm:py-7
                 bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-emerald-500/20">
                 <div className="absolute inset-0 opacity-10"
                     style={{backgroundImage:`url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='1' fill-rule='evenodd'%3E%3Cpath d='M0 20L20 0H10L0 10M20 20V10L10 20'/%3E%3C/g%3E%3C/svg%3E")`}}/>
-                <div className="absolute top-0 right-0 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4"/>
+                <div className="absolute top-0 right-0 w-48 sm:w-72 h-48 sm:h-72 bg-emerald-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4"/>
 
-                <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-white/10 rounded-xl backdrop-blur-sm shadow-inner shadow-white/5">
-                            <ArrowRightLeft className="h-5 w-5 text-emerald-400" />
+                <div className="relative flex flex-col gap-3">
+                    <div className="flex items-start sm:items-center gap-2.5 sm:gap-3">
+                        <div className="p-2 sm:p-2.5 bg-white/10 rounded-xl backdrop-blur-sm shadow-inner shadow-white/5 shrink-0">
+                            <ArrowRightLeft className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-400" />
                         </div>
-                        <div>
-                            <div className="flex items-center gap-2 mb-0.5">
-                                <h1 className="text-2xl font-bold text-white tracking-tight">
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                                <h1 className="text-lg sm:text-2xl font-bold text-white tracking-tight truncate">
                                     AgriAid Simulator
                                 </h1>
-                                <span className="px-1.5 py-0.5 bg-emerald-500/20 backdrop-blur-md rounded-md text-[10px] font-bold text-emerald-400 uppercase tracking-wider border border-emerald-500/20 shadow-sm">
-                                    AI Powered
+                                <span className="px-1.5 py-0.5 bg-emerald-500/20 backdrop-blur-md rounded-md text-[9px] sm:text-[10px] font-bold text-emerald-400 uppercase tracking-wider border border-emerald-500/20 shadow-sm shrink-0">
+                                    AI
                                 </span>
                             </div>
-                            <p className="text-[12px] text-slate-400 flex items-center gap-1.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"/>
-                                Compare practical farming strategies. No fake numbers, just research-backed insights.
+                            <p className="text-[11px] sm:text-[12px] text-slate-400 flex items-center gap-1.5 leading-relaxed">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0"/>
+                                <span className="line-clamp-2 sm:line-clamp-1">Compare practical farming strategies. No fake numbers, just research-backed insights.</span>
                             </p>
                         </div>
                     </div>
@@ -189,25 +230,31 @@ const ImpactSimulator = () => {
                                     <label className="flex items-center gap-1 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                                         <Leaf className="w-3 h-3" /> Crop
                                     </label>
-                                    <select value={baseData.crop} onChange={(e) => setBaseData({ ...baseData, crop: e.target.value })} className="w-full h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-[12px] dark:text-white focus:ring-2 focus:ring-emerald-500/30">
-                                        {crops.map(c => <option key={c} value={c}>{c}</option>)}
-                                    </select>
+                                    <CustomSelect 
+                                        value={baseData.crop} 
+                                        onChange={(e) => setBaseData({ ...baseData, crop: e.target.value })} 
+                                        options={crops} 
+                                    />
                                 </div>
                                 <div>
                                     <label className="flex items-center gap-1 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                                         <Sprout className="w-3 h-3" /> Soil
                                     </label>
-                                    <select value={baseData.soilType} onChange={(e) => setBaseData({ ...baseData, soilType: e.target.value })} className="w-full h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-[12px] dark:text-white focus:ring-2 focus:ring-emerald-500/30">
-                                        {soilTypes.map(s => <option key={s} value={s}>{s}</option>)}
-                                    </select>
+                                    <CustomSelect 
+                                        value={baseData.soilType} 
+                                        onChange={(e) => setBaseData({ ...baseData, soilType: e.target.value })} 
+                                        options={soilTypes} 
+                                    />
                                 </div>
                                 <div>
                                     <label className="flex items-center gap-1 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                                         <Wind className="w-3 h-3" /> Weather
                                     </label>
-                                    <select value={baseData.weather} onChange={(e) => setBaseData({ ...baseData, weather: e.target.value })} className="w-full h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-[12px] dark:text-white focus:ring-2 focus:ring-emerald-500/30">
-                                        {weathers.map(w => <option key={w} value={w}>{w}</option>)}
-                                    </select>
+                                    <CustomSelect 
+                                        value={baseData.weather} 
+                                        onChange={(e) => setBaseData({ ...baseData, weather: e.target.value })} 
+                                        options={weathers} 
+                                    />
                                 </div>
                                 <div>
                                     <label className="block mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Acres</label>
@@ -220,15 +267,23 @@ const ImpactSimulator = () => {
                         <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl p-5 rounded-2xl border border-slate-100 dark:border-slate-700/60 shadow-lg border-l-4 border-l-emerald-500">
                             <h3 className="text-[13px] font-semibold text-emerald-600 dark:text-emerald-400 mb-3">Scenario A Setup</h3>
                             <div className="space-y-3">
-                                <select value={scenarioA.method} onChange={(e) => setScenarioA({ ...scenarioA, method: e.target.value })} className="w-full h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-[12px] dark:text-white">
-                                    {methods.map(m => <option key={m} value={m}>{m} Farming</option>)}
-                                </select>
-                                <select value={scenarioA.irrigation} onChange={(e) => setScenarioA({ ...scenarioA, irrigation: e.target.value })} className="w-full h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-[12px] dark:text-white">
-                                    {irrigations.map(m => <option key={m} value={m}>{m} Irrigation</option>)}
-                                </select>
-                                <select value={scenarioA.fertilizer} onChange={(e) => setScenarioA({ ...scenarioA, fertilizer: e.target.value })} className="w-full h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-[12px] dark:text-white">
-                                    {fertilizers.map(m => <option key={m} value={m}>{m}</option>)}
-                                </select>
+                                <CustomSelect 
+                                    value={scenarioA.method} 
+                                    onChange={(e) => setScenarioA({ ...scenarioA, method: e.target.value })} 
+                                    options={methods} 
+                                    suffix=" Farming" 
+                                />
+                                <CustomSelect 
+                                    value={scenarioA.irrigation} 
+                                    onChange={(e) => setScenarioA({ ...scenarioA, irrigation: e.target.value })} 
+                                    options={irrigations} 
+                                    suffix=" Irrigation" 
+                                />
+                                <CustomSelect 
+                                    value={scenarioA.fertilizer} 
+                                    onChange={(e) => setScenarioA({ ...scenarioA, fertilizer: e.target.value })} 
+                                    options={fertilizers} 
+                                />
                             </div>
                         </div>
 
@@ -236,15 +291,23 @@ const ImpactSimulator = () => {
                         <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl p-5 rounded-2xl border border-slate-100 dark:border-slate-700/60 shadow-lg border-l-4 border-l-rose-500">
                             <h3 className="text-[13px] font-semibold text-rose-600 dark:text-rose-400 mb-3">Scenario B Setup</h3>
                             <div className="space-y-3">
-                                <select value={scenarioB.method} onChange={(e) => setScenarioB({ ...scenarioB, method: e.target.value })} className="w-full h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-[12px] dark:text-white">
-                                    {methods.map(m => <option key={m} value={m}>{m} Farming</option>)}
-                                </select>
-                                <select value={scenarioB.irrigation} onChange={(e) => setScenarioB({ ...scenarioB, irrigation: e.target.value })} className="w-full h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-[12px] dark:text-white">
-                                    {irrigations.map(m => <option key={m} value={m}>{m} Irrigation</option>)}
-                                </select>
-                                <select value={scenarioB.fertilizer} onChange={(e) => setScenarioB({ ...scenarioB, fertilizer: e.target.value })} className="w-full h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-[12px] dark:text-white">
-                                    {fertilizers.map(m => <option key={m} value={m}>{m}</option>)}
-                                </select>
+                                <CustomSelect 
+                                    value={scenarioB.method} 
+                                    onChange={(e) => setScenarioB({ ...scenarioB, method: e.target.value })} 
+                                    options={methods} 
+                                    suffix=" Farming" 
+                                />
+                                <CustomSelect 
+                                    value={scenarioB.irrigation} 
+                                    onChange={(e) => setScenarioB({ ...scenarioB, irrigation: e.target.value })} 
+                                    options={irrigations} 
+                                    suffix=" Irrigation" 
+                                />
+                                <CustomSelect 
+                                    value={scenarioB.fertilizer} 
+                                    onChange={(e) => setScenarioB({ ...scenarioB, fertilizer: e.target.value })} 
+                                    options={fertilizers} 
+                                />
                             </div>
                         </div>
 

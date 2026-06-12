@@ -2,7 +2,7 @@ import axios from 'axios';
 import { supabase } from './supabaseClient';
 import { API_BASE_URL } from '../config';
 
-const apiClient = axios.create({ baseURL: API_BASE_URL });
+const apiClient = axios.create({ baseURL: `${API_BASE_URL}/api/farmer` });
 
 // Attach Supabase JWT to every request if available
 apiClient.interceptors.request.use(async (config) => {

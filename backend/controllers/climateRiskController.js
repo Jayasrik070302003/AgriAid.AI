@@ -20,8 +20,45 @@ async function predictClimateRisk(req, res) {
     try {
         const { crop, state, district, temperature, humidity, rainfall } = req.body;
 
-        if (!crop || !state || !district || !temperature || !humidity || !rainfall) {
-            return res.status(400).json({ success: false, message: 'All inputs are required' });
+        console.log('[ClimateRisk] Received request:', { crop, state, district, temperature, humidity, rainfall });
+
+        if (!crop || !state || !district) {
+            return res.status(400).json({ success: false, message: 'Crop, state, and district are required' });
+        }
+
+        // Auto-fetch weather if not provided (check for empty, null, or undefined)
+        let temp = temperature;
+        let humid = humidity;
+        let rain = rainfall;
+
+        const needsWeatherFetch = 
+            temp === undefined || temp === null || temp === '' || 
+            humid === undefined || humid === null || humid === '' || 
+            rain === undefined || rain === null || rain === '';
+
+        if (needsWeatherFetch) {
+            console.log('[ClimateRisk] Weather data missing, attempting auto-fetch...');
+            try {
+                const { getWeatherByCity } = require('../services/weatherEngine');
+                const locationQuery = `${district}, ${state}, India`;
+                console.log('[ClimateRisk] Fetching weather for:', locationQuery);
+                const weatherData = await getWeatherByCity(locationQuery);
+                
+                temp = (temp === undefined || temp === null || temp === '') ? weatherData.temp : temp;
+                humid = (humid === undefined || humid === null || humid === '') ? weatherData.humidity : humid;
+                rain = (rain === undefined || rain === null || rain === '') ? (weatherData.precipitation || 0) : rain;
+                
+                console.log(`[ClimateRisk] Auto-fetched weather: ${temp}°C, ${humid}%, ${rain}mm`);
+            } catch (weatherErr) {
+                console.error('[ClimateRisk] Weather fetch error:', weatherErr.message);
+                // Use default values instead of failing
+                temp = temp || 28;
+                humid = humid || 65;
+                rain = rain || 0;
+                console.log(`[ClimateRisk] Using default weather values: ${temp}°C, ${humid}%, ${rain}mm`);
+            }
+        } else {
+            console.log('[ClimateRisk] Using provided weather data:', { temp, humid, rain });
         }
 
         const prompt = `You are AgriAid.AI's expert Agricultural Climate Scientist.
@@ -29,9 +66,9 @@ Analyze the following environmental conditions and evaluate the biological risks
 
 Location: ${district}, ${state}, India
 Crop: ${crop}
-Current Temperature: ${temperature}°C
-Relative Humidity: ${humidity}%
-Rainfall/Precipitation: ${rainfall}mm
+Current Temperature: ${temp}°C
+Relative Humidity: ${humid}%
+Rainfall/Precipitation: ${rain}mm
 
 Evaluate the specific risks based on the biological thresholds of this crop and the provided weather metrics.
 You MUST output exactly one raw JSON object matching the schema below.
@@ -65,7 +102,11 @@ No markdown, no backticks, no extra text.
 
         res.json({
             success: true,
-            data: parsedResponse
+            data: {
+                ...parsedResponse,
+                autoFetchedWeather: !temperature || !humidity || !rainfall,
+                weatherData: { temperature: temp, humidity: humid, rainfall: rain }
+            }
         });
 
     } catch (error) {

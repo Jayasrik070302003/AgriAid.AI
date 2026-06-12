@@ -1,196 +1,434 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Bell, Shield, Smartphone, Globe, Moon, Save, ArrowLeft, Check } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { useLanguage } from '../Context/LanguageContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Bell, Shield, Smartphone, Moon, Save, Check, Sun,
+    Monitor, Sprout, ChevronRight, Zap, Settings2, Volume2,
+    VolumeX, Mail, MessageSquare, BookOpen, Flag, HelpCircle,
+    ExternalLink, AlertCircle, FileText, Clock, Wifi, Eye
+} from 'lucide-react';
 import { useTheme } from '../Context/ThemeContext';
 
-const Settings = () => {
-    const { t, language, setLanguage } = useLanguage();
-    const { isDarkMode, toggleTheme } = useTheme();
-    const [notifications, setNotifications] = useState(true);
-    const [dataSaver, setDataSaver] = useState(false);
+// ── Primitives ───────────────────────────────────────────────────────────────
 
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: {
-            opacity: 1,
-            transition: { staggerChildren: 0.1 }
-        }
+const Toggle = ({ checked, onChange }) => (
+    <button onClick={() => onChange(!checked)}
+        className={`relative w-9 h-5 rounded-full transition-colors duration-200 shrink-0 focus:outline-none ${checked ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'}`}>
+        <motion.div layout transition={{ type: 'spring', stiffness: 700, damping: 30 }}
+            className="w-3.5 h-3.5 rounded-full bg-white shadow-sm absolute top-[3px]"
+            style={{ left: checked ? 'calc(100% - 17px)' : '3px' }} />
+    </button>
+);
+
+const SettingRow = ({ icon: Icon, iconBg, iconColor, title, desc, right, last }) => (
+    <>
+        <div className="flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+            <div className="flex items-center gap-3 min-w-0">
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${iconBg}`}>
+                    <Icon className={`h-3.5 w-3.5 ${iconColor}`} />
+                </div>
+                <div className="min-w-0">
+                    <p className="text-[13px] font-semibold text-slate-800 dark:text-slate-200 leading-tight">{title}</p>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 leading-tight">{desc}</p>
+                </div>
+            </div>
+            <div className="shrink-0 ml-6">{right}</div>
+        </div>
+        {!last && <div className="h-px bg-slate-100 dark:bg-slate-800 mx-4" />}
+    </>
+);
+
+const SectionHead = ({ icon: Icon, iconBg, iconColor, title, desc }) => (
+    <div className="flex items-center gap-3 mb-5 pb-4 border-b border-slate-100 dark:border-slate-800">
+        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${iconBg}`}>
+            <Icon className={`h-4 w-4 ${iconColor}`} />
+        </div>
+        <div>
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white leading-none">{title}</h2>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">{desc}</p>
+        </div>
+    </div>
+);
+
+const InfoNote = ({ children, color = 'blue' }) => {
+    const map = {
+        blue:   'bg-blue-50/60 border-blue-100 text-blue-700/80 dark:bg-blue-900/10 dark:border-blue-900/20 dark:text-blue-300/70',
+        amber:  'bg-amber-50/60 border-amber-100 text-amber-700/80 dark:bg-amber-900/10 dark:border-amber-900/20 dark:text-amber-300/70',
+        emerald:'bg-emerald-50/60 border-emerald-100 text-emerald-700/80 dark:bg-emerald-900/10 dark:border-emerald-900/20 dark:text-emerald-300/70',
     };
-
-    const itemVariants = {
-        hidden: { y: 20, opacity: 0 },
-        visible: { y: 0, opacity: 1 }
-    };
-
-    const Toggle = ({ checked, onChange }) => (
-        <button
-            onClick={() => onChange(!checked)}
-            className={`cursor-pointer w-14 h-7 flex items-center rounded-full p-1 transition-all duration-300 ease-in-out border ${checked ? 'bg-gradient-to-r from-emerald-500 to-green-400 border-transparent shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'bg-slate-100 border-slate-200 dark:bg-slate-700 dark:border-slate-600'}`}
-        >
-            <motion.div
-                layout
-                transition={{ type: "spring", stiffness: 700, damping: 30 }}
-                className="w-5 h-5 rounded-full bg-white shadow-sm"
-                style={{ marginLeft: checked ? 'auto' : '0' }}
-            />
-        </button>
-    );
-
     return (
-        <div className="min-h-screen relative overflow-hidden pb-32">
-            {/* Decorative Background Elements - Fixed Gradient */}
-            <div className="absolute top-0 left-0 w-full h-[600px] bg-gradient-to-b from-green-50/80 via-emerald-50/50 to-transparent dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 pointer-events-none" />
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-100/40 rounded-full blur-[100px] mix-blend-multiply animate-blob animation-delay-2000 dark:bg-emerald-900/10 pointer-events-none" />
-            <div className="absolute top-[20%] left-[-10%] w-[400px] h-[400px] bg-blue-100/40 rounded-full blur-[100px] mix-blend-multiply animate-blob dark:bg-blue-900/10 pointer-events-none" />
+        <div className={`mt-4 p-3 border rounded-xl text-[11px] leading-relaxed ${map[color]}`}>{children}</div>
+    );
+};
 
-            <div className="max-w-4xl mx-auto px-4 md:px-8 py-12 relative z-10 pt-4">
-                {/* Added 'pt-4' to push content down slightly more if needed, though surrounding layout usually handles it */}
+const HelpCard = ({ icon: Icon, iconBg, iconColor, title, desc, action, actionLabel }) => (
+    <div className="flex items-start gap-3 p-4 bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-xl hover:border-slate-200 dark:hover:border-slate-700 transition-colors group">
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${iconBg}`}>
+            <Icon className={`h-3.5 w-3.5 ${iconColor}`} />
+        </div>
+        <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-tight">{title}</p>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 leading-relaxed">{desc}</p>
+        </div>
+        <button onClick={action}
+            className="shrink-0 flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors mt-0.5">
+            {actionLabel} <ExternalLink className="h-2.5 w-2.5" />
+        </button>
+    </div>
+);
 
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-10 flex items-center gap-5 mt-4"
-                >
-                    <Link to="/" className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:shadow-md hover:scale-105 transition-all group dark:bg-slate-800 dark:border-slate-700">
-                        <ArrowLeft className="h-6 w-6 text-slate-500 group-hover:text-emerald-600 transition-colors dark:text-slate-400" />
-                    </Link>
-                    <div>
-                        <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight dark:text-white">
-                            {t('nav_settings')}
-                        </h1>
-                        <p className="text-slate-500 font-medium text-lg dark:text-slate-400 mt-1">{t('settings_subtitle') || "Manage your preferences & app configuration"}</p>
-                    </div>
-                </motion.div>
+// ── Nav config ───────────────────────────────────────────────────────────────
 
-                <motion.div
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                    className="space-y-8"
-                >
-                    {/* Language Section - Cleaner Card */}
-                    <motion.div variants={itemVariants} className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-xl shadow-slate-200/40 dark:bg-slate-800 dark:border-slate-700 dark:shadow-none relative overflow-visible ring-1 ring-slate-100 dark:ring-slate-700">
-                        {/* Subtle decoration inside card */}
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-blue-50 to-transparent rounded-tr-[2rem] rounded-bl-[4rem] pointer-events-none opacity-60" />
+const NAV = [
+    { id: 'appearance',    label: 'Appearance',    icon: Sun,         desc: 'Theme & display',            accent: 'text-amber-500',  activeBg: 'bg-amber-50 dark:bg-amber-900/20' },
+    { id: 'preferences',   label: 'Preferences',   icon: Settings2,   desc: 'General & personalization',  accent: 'text-purple-500', activeBg: 'bg-purple-50 dark:bg-purple-900/20' },
+    { id: 'notifications', label: 'Notifications', icon: Bell,        desc: 'Alerts & reminders',         accent: 'text-rose-500',   activeBg: 'bg-rose-50 dark:bg-rose-900/20' },
+    { id: 'help',          label: 'Help & Support', icon: HelpCircle, desc: 'FAQ, contact & guides',      accent: 'text-teal-500',   activeBg: 'bg-teal-50 dark:bg-teal-900/20' },
+];
 
-                        <div className="relative z-10">
-                            <div className="flex items-center gap-4 mb-8">
-                                <div className="p-3.5 bg-blue-50 text-blue-600 rounded-2xl dark:bg-blue-900/30 dark:text-blue-400">
-                                    <Globe className="h-6 w-6" />
-                                </div>
-                                <div>
-                                    <h2 className="text-2xl font-black text-slate-900 dark:text-white">{t('settings_language') || "Language & Region"}</h2>
-                                    <p className="text-slate-500 font-medium dark:text-slate-400">Select your preferred language interface.</p>
-                                </div>
+// ── Main ─────────────────────────────────────────────────────────────────────
+
+const Settings = () => {
+    const { theme, setTheme, isDarkMode } = useTheme();
+    const [active, setActive] = useState('appearance');
+    const [saved, setSaved] = useState(false);
+
+    // Preferences state
+    const [dataSaver, setDataSaver]     = useState(false);
+    const [compactUI, setCompactUI]     = useState(false);
+    const [animations, setAnimations]   = useState(true);
+    const [autoDetect, setAutoDetect]   = useState(true);
+
+    // Notification state
+    const [notifWeather, setNotifWeather]   = useState(true);
+    const [notifCrop, setNotifCrop]         = useState(true);
+    const [notifMarket, setNotifMarket]     = useState(false);
+    const [notifAI, setNotifAI]             = useState(true);
+    const [notifEmail, setNotifEmail]       = useState(false);
+    const [notifSound, setNotifSound]       = useState(true);
+
+    const handleSave = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
+
+    const themes = [
+        { id: 'light',      label: 'Light',      icon: Sun,     preview: ['#f8fafc', '#ffffff', '#10b981'] },
+        { id: 'dark-ai',    label: 'Dark AI',     icon: Moon,    preview: ['#050B14', '#0A1525', '#10b981'] },
+        { id: 'green-agri', label: 'Green Agri',  icon: Sprout,  preview: ['#f0fdf4', '#ffffff', '#059669'] },
+        { id: 'cyber-neon', label: 'Cyber Neon',  icon: Zap,     preview: ['#030008', '#0c021a', '#ff007f'] },
+    ];
+
+    const sections = {
+
+        // ── Appearance ────────────────────────────────────────────────────
+        appearance: (
+            <div>
+                <SectionHead icon={Sun} iconBg="bg-amber-50 dark:bg-amber-900/20" iconColor="text-amber-500"
+                    title="Interface Theme" desc="Choose your preferred visual style" />
+                
+                <div className="space-y-2.5">
+                    {themes.map(({ id, label, icon: Icon, preview }) => (
+                        <button key={id} onClick={() => setTheme(id)}
+                            className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all group ${
+                                theme === id
+                                    ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/10 shadow-sm'
+                                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/30 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                            }`}>
+                            {/* Icon */}
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all ${
+                                theme === id 
+                                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' 
+                                    : 'bg-slate-100 dark:bg-slate-700 text-slate-400'
+                            }`}>
+                                <Icon className="h-5 w-5" />
                             </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                                {[
-                                    { code: 'EN', name: 'English', native: 'English', flag: '🇬🇧' },
-                                    { code: 'HI', name: 'Hindi', native: 'हिंदी', flag: '🇮🇳' },
-                                    { code: 'TA', name: 'Tamil', native: 'தமிழ்', flag: '🇮🇳' }
-                                ].map((lang) => (
-                                    <motion.button
-                                        key={lang.code}
-                                        whileHover={{ scale: 1.03, y: -2 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        onClick={() => setLanguage(lang.code)}
-                                        className={`relative group flex flex-col items-start justify-center p-5 rounded-2xl border-2 transition-all duration-200 ${language === lang.code
-                                            ? 'border-emerald-500 bg-emerald-50/50 shadow-lg shadow-emerald-500/10 dark:bg-emerald-900/20 dark:border-emerald-500'
-                                            : 'border-slate-100 bg-slate-50/50 hover:bg-white hover:border-emerald-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-800/50 dark:hover:border-slate-600'
-                                            }`}
-                                    >
-                                        <div className="flex items-center justify-between w-full mb-3">
-                                            <span className="text-3xl filter drop-shadow-sm">{lang.flag}</span>
-                                            {language === lang.code && (
-                                                <div className="bg-emerald-500 text-white p-1 rounded-full shadow-sm">
-                                                    <Check className="h-3.5 w-3.5 stroke-[3px]" />
-                                                </div>
-                                            )}
-                                        </div>
-                                        <span className={`font-black text-lg mb-0.5 ${language === lang.code ? 'text-emerald-800 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200'}`}>
-                                            {lang.native}
-                                        </span>
-                                        <span className={`text-sm font-semibold ${language === lang.code ? 'text-emerald-600/80 dark:text-emerald-500/80' : 'text-slate-400'}`}>
-                                            {lang.name}
-                                        </span>
-                                    </motion.button>
+                            
+                            {/* Text */}
+                            <div className="flex-1 text-left">
+                                <p className={`text-sm font-bold mb-0.5 transition-colors ${
+                                    theme === id ? 'text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'
+                                }`}>
+                                    {label === 'Dark AI' ? 'DARK AI THEME' : label === 'Light' ? 'LIGHT THEME' : label === 'Green Agri' ? 'GREEN AGRI THEME' : 'CYBER NEON THEME'}
+                                </p>
+                                <p className={`text-[11px] transition-colors ${
+                                    theme === id ? 'text-slate-600 dark:text-slate-400' : 'text-slate-400 dark:text-slate-500'
+                                }`}>
+                                    {label === 'Dark AI' ? 'Deep tech carbon space' : label === 'Light' ? 'Clean ultra-crisp slate' : label === 'Green Agri' ? 'Eco-friendly natural vibe' : 'Futuristic vibrant synth'}
+                                </p>
+                            </div>
+                            
+                            {/* Color Preview */}
+                            <div className="flex gap-1.5 shrink-0">
+                                {preview.map((color, idx) => (
+                                    <div 
+                                        key={idx} 
+                                        className="w-5 h-5 rounded-full border-2 border-white dark:border-slate-900 shadow-sm"
+                                        style={{ backgroundColor: color }}
+                                    />
                                 ))}
                             </div>
-                        </div>
-                    </motion.div>
-
-                    {/* Preferences Section - Cleaner Card */}
-                    <motion.div variants={itemVariants} className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-xl shadow-slate-200/40 dark:bg-slate-800 dark:border-slate-700 dark:shadow-none relative overflow-hidden ring-1 ring-slate-100 dark:ring-slate-700">
-
-                        <div className="relative z-10">
-                            <div className="flex items-center gap-4 mb-8">
-                                <div className="p-3.5 bg-purple-50 text-purple-600 rounded-2xl dark:bg-purple-900/30 dark:text-purple-400">
-                                    <Shield className="h-6 w-6" />
-                                </div>
-                                <div>
-                                    <h2 className="text-2xl font-black text-slate-900 dark:text-white">{t('settings_general') || "App Preferences"}</h2>
-                                    <p className="text-slate-500 font-medium dark:text-slate-400">Customize your app experience.</p>
-                                </div>
-                            </div>
-
-                            <div className="space-y-4">
-                                {/* Notification Toggle */}
-                                <div className="group flex items-center justify-between p-5 rounded-2xl bg-slate-50/50 border border-slate-100 hover:bg-white hover:border-purple-200 hover:shadow-lg hover:shadow-purple-500/5 transition-all duration-300 dark:bg-slate-800/50 dark:border-slate-700 dark:hover:border-slate-600">
-                                    <div className="flex items-center gap-5">
-                                        <div className="p-3 bg-white text-purple-600 rounded-2xl shadow-sm border border-slate-100 group-hover:scale-105 transition-transform dark:bg-slate-700 dark:border-slate-600 dark:text-purple-400">
-                                            <Bell className="h-6 w-6" />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-lg text-slate-900 dark:text-white group-hover:text-purple-700 transition-colors">{t('settings_notifications') || "Push Notifications"}</h3>
-                                            <p className="text-sm font-medium text-slate-400 dark:text-slate-500">{t('settings_notifications_desc') || "Stay updated on weather & crop health."}</p>
-                                        </div>
-                                    </div>
-                                    <Toggle checked={notifications} onChange={setNotifications} />
-                                </div>
-
-                                {/* Dark Mode Toggle */}
-                                <div className="group flex items-center justify-between p-5 rounded-2xl bg-slate-50/50 border border-slate-100 hover:bg-white hover:border-blue-200 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300 dark:bg-slate-800/50 dark:border-slate-700 dark:hover:border-slate-600">
-                                    <div className="flex items-center gap-5">
-                                        <div className="p-3 bg-white text-slate-600 rounded-2xl shadow-sm border border-slate-100 group-hover:scale-105 transition-transform dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300">
-                                            <Moon className="h-6 w-6" />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-lg text-slate-900 dark:text-white group-hover:text-blue-700 transition-colors">{t('settings_darkmode') || "Dark Mode"}</h3>
-                                            <p className="text-sm font-medium text-slate-400 dark:text-slate-500">{t('settings_darkmode_desc') || "Reduce eye strain at night."}</p>
-                                        </div>
-                                    </div>
-                                    <Toggle checked={isDarkMode} onChange={toggleTheme} />
-                                </div>
-
-                                {/* Data Saver Toggle */}
-                                <div className="group flex items-center justify-between p-5 rounded-2xl bg-slate-50/50 border border-slate-100 hover:bg-white hover:border-emerald-200 hover:shadow-lg hover:shadow-emerald-500/5 transition-all duration-300 dark:bg-slate-800/50 dark:border-slate-700 dark:hover:border-slate-600">
-                                    <div className="flex items-center gap-5">
-                                        <div className="p-3 bg-white text-emerald-600 rounded-2xl shadow-sm border border-slate-100 group-hover:scale-105 transition-transform dark:bg-slate-700 dark:border-slate-600 dark:text-emerald-400">
-                                            <Smartphone className="h-6 w-6" />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-lg text-slate-900 dark:text-white group-hover:text-emerald-700 transition-colors">{t('settings_datasaver') || "Data Saver"}</h3>
-                                            <p className="text-sm font-medium text-slate-400 dark:text-slate-500">{t('settings_datasaver_desc') || "Load compressed images to save data."}</p>
-                                        </div>
-                                    </div>
-                                    <Toggle checked={dataSaver} onChange={setDataSaver} />
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
-
-                    {/* Save Button (Mock) */}
-                    <motion.div variants={itemVariants} className="flex justify-end pt-4">
-                        <button className="flex items-center gap-2 px-10 py-4 bg-gray-900 text-white font-bold rounded-2xl shadow-xl shadow-gray-900/20 hover:bg-gray-800 hover:shadow-2xl hover:shadow-gray-900/30 hover:-translate-y-1 transition-all">
-                            <Save className="h-5 w-5" />
-                            {t('profile_save') || "Save Changes"}
+                            
+                            {/* Check Mark */}
+                            {theme === id && (
+                                <motion.div 
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center shrink-0 shadow-sm"
+                                >
+                                    <Check className="h-3 w-3 text-white stroke-[3]" />
+                                </motion.div>
+                            )}
                         </button>
-                    </motion.div>
+                    ))}
+                </div>
 
-                </motion.div>
+                <div className="mt-4 p-4 bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-xl">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">System</p>
+                            <p className="text-xs font-semibold text-slate-900 dark:text-white mt-1">Current: {themes.find(t => t.id === theme)?.label}</p>
+                        </div>
+                        <div className="px-3 py-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg">
+                            <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Mode</p>
+                            <p className="text-xs font-bold text-slate-900 dark:text-white">{isDarkMode ? '🌙 Dark' : '☀️ Light'}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        ),
+
+        // ── Preferences ───────────────────────────────────────────────────
+        preferences: (
+            <div>
+                <SectionHead icon={Settings2} iconBg="bg-purple-50 dark:bg-purple-900/20" iconColor="text-purple-500"
+                    title="App Preferences" desc="General app behavior and personalization options" />
+
+                <div className="space-y-3">
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-wider px-1">Performance</p>
+                    <div className="bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden">
+                        <SettingRow icon={Wifi} iconBg="bg-emerald-50 dark:bg-emerald-900/20" iconColor="text-emerald-500"
+                            title="Data Saver" desc="Load compressed images and defer non-critical API requests to save mobile data"
+                            right={<Toggle checked={dataSaver} onChange={setDataSaver} />} />
+                        <SettingRow icon={Zap} iconBg="bg-amber-50 dark:bg-amber-900/20" iconColor="text-amber-500"
+                            title="UI Animations" desc="Enable smooth transitions and motion effects across the dashboard"
+                            right={<Toggle checked={animations} onChange={setAnimations} />} last />
+                    </div>
+
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-wider px-1 pt-2">Display</p>
+                    <div className="bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden">
+                        <SettingRow icon={Eye} iconBg="bg-blue-50 dark:bg-blue-900/20" iconColor="text-blue-500"
+                            title="Compact UI" desc="Reduce card padding and spacing for higher information density"
+                            right={<Toggle checked={compactUI} onChange={setCompactUI} />} />
+                        <SettingRow icon={Monitor} iconBg="bg-slate-100 dark:bg-slate-800" iconColor="text-slate-500"
+                            title="Auto-Detect Location" desc="Automatically detect GPS coordinates on page load for weather and soil context"
+                            right={<Toggle checked={autoDetect} onChange={setAutoDetect} />} last />
+                    </div>
+                </div>
+
+                <InfoNote color="amber">
+                    Changes to compact UI and animations take effect immediately. Data saver applies to the next page load.
+                </InfoNote>
+            </div>
+        ),
+
+        // ── Notifications ─────────────────────────────────────────────────
+        notifications: (
+            <div>
+                <SectionHead icon={Bell} iconBg="bg-rose-50 dark:bg-rose-900/20" iconColor="text-rose-500"
+                    title="Notifications" desc="Control which alerts and reminders you receive" />
+
+                <div className="space-y-3">
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-wider px-1">Alert Types</p>
+                    <div className="bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden">
+                        <SettingRow icon={Zap} iconBg="bg-amber-50 dark:bg-amber-900/20" iconColor="text-amber-500"
+                            title="Weather Alerts" desc="Extreme weather, drought risk, rainfall forecasts and climate advisories"
+                            right={<Toggle checked={notifWeather} onChange={setNotifWeather} />} />
+                        <SettingRow icon={Sprout} iconBg="bg-emerald-50 dark:bg-emerald-900/20" iconColor="text-emerald-500"
+                            title="Crop Health Warnings" desc="Disease detection results, pest risk alerts and irrigation reminders"
+                            right={<Toggle checked={notifCrop} onChange={setNotifCrop} />} />
+                        <SettingRow icon={Monitor} iconBg="bg-blue-50 dark:bg-blue-900/20" iconColor="text-blue-500"
+                            title="Market Price Updates" desc="Daily mandi price updates for your selected crops and regions"
+                            right={<Toggle checked={notifMarket} onChange={setNotifMarket} />} />
+                        <SettingRow icon={MessageSquare} iconBg="bg-purple-50 dark:bg-purple-900/20" iconColor="text-purple-500"
+                            title="AI Insights" desc="Personalized recommendations and AI-generated farming tips"
+                            right={<Toggle checked={notifAI} onChange={setNotifAI} />} last />
+                    </div>
+
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-wider px-1 pt-2">Delivery</p>
+                    <div className="bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden">
+                        <SettingRow icon={Mail} iconBg="bg-slate-100 dark:bg-slate-800" iconColor="text-slate-500"
+                            title="Email Notifications" desc="Receive weekly summaries and critical alerts via email"
+                            right={<Toggle checked={notifEmail} onChange={setNotifEmail} />} />
+                        <SettingRow icon={notifSound ? Volume2 : VolumeX} iconBg="bg-rose-50 dark:bg-rose-900/20" iconColor="text-rose-500"
+                            title="Sound Alerts" desc="Play notification sounds for critical crop and weather warnings"
+                            right={<Toggle checked={notifSound} onChange={setNotifSound} />} last />
+                    </div>
+                </div>
+
+                <InfoNote color="emerald">
+                    Notification preferences are stored locally in your browser. Browser push notification permission is required for real-time alerts.
+                </InfoNote>
+            </div>
+        ),
+
+        // ── Help & Support ────────────────────────────────────────────────
+        help: (
+            <div>
+                <SectionHead icon={HelpCircle} iconBg="bg-teal-50 dark:bg-teal-900/20" iconColor="text-teal-500"
+                    title="Help & Support" desc="Resources, documentation, and platform information" />
+
+                <div className="space-y-2.5">
+                    <HelpCard icon={BookOpen} iconBg="bg-blue-50 dark:bg-blue-900/20" iconColor="text-blue-500"
+                        title="User Documentation" desc="Complete guide covering crop diagnosis, AI tools, simulators, and weather features with screenshots and examples."
+                        action={() => window.open('https://github.com/yourusername/agriaid-ai/wiki', '_blank')} actionLabel="Open Docs" />
+                    <HelpCard icon={FileText} iconBg="bg-purple-50 dark:bg-purple-900/20" iconColor="text-purple-500"
+                        title="Frequently Asked Questions" desc="Common questions about AI accuracy, data privacy, offline mode, language support, and troubleshooting."
+                        action={() => {}} actionLabel="View FAQ" />
+                    <HelpCard icon={Zap} iconBg="bg-amber-50 dark:bg-amber-900/20" iconColor="text-amber-500"
+                        title="Video Tutorials" desc="Step-by-step video guides on using crop scanner, interpreting results, and utilizing AI features effectively."
+                        action={() => {}} actionLabel="Watch" />
+                    <HelpCard icon={MessageSquare} iconBg="bg-emerald-50 dark:bg-emerald-900/20" iconColor="text-emerald-500"
+                        title="Community Forum" desc="Connect with other farmers, share experiences, ask questions, and learn best practices from the community."
+                        action={() => {}} actionLabel="Join Forum" />
+                    <HelpCard icon={Flag} iconBg="bg-rose-50 dark:bg-rose-900/20" iconColor="text-rose-500"
+                        title="Report Bug or Issue" desc="Found incorrect AI predictions or technical problems? Submit detailed feedback to help us improve the platform."
+                        action={() => {}} actionLabel="Report" />
+                    <HelpCard icon={Sprout} iconBg="bg-green-50 dark:bg-green-900/20" iconColor="text-green-600"
+                        title="Feature Requests" desc="Suggest new crops, tools, or features you'd like to see. We prioritize based on farmer feedback and demand."
+                        action={() => {}} actionLabel="Suggest" />
+                </div>
+
+                {/* Platform Stats */}
+                <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                    {[
+                        { icon: Clock, label: 'Avg Response', value: '< 24h', color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+                        { icon: Sprout, label: 'Version', value: 'v3.0.0', color: 'text-green-500', bg: 'bg-green-50 dark:bg-green-900/20' },
+                        { icon: AlertCircle, label: 'Known Issues', value: '0 active', color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20' },
+                        { icon: Eye, label: 'Uptime', value: '99.9%', color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+                    ].map(({ icon: Icon, label, value, color, bg }) => (
+                        <div key={label} className="p-3 bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl">
+                            <div className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center mb-2`}>
+                                <Icon className={`h-4 w-4 ${color}`} />
+                            </div>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider">{label}</p>
+                            <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">{value}</p>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Quick Links */}
+                <div className="mt-4 p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-800/50 dark:to-slate-800/30 border border-slate-200 dark:border-slate-700 rounded-xl">
+                    <div className="flex items-center gap-2 mb-3">
+                        <div className="w-6 h-6 rounded-lg bg-teal-500/10 flex items-center justify-center">
+                            <ExternalLink className="h-3 w-3 text-teal-500" />
+                        </div>
+                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Quick Links</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {[
+                            { label: 'GitHub Repository', url: 'https://github.com' },
+                            { label: 'API Documentation', url: '#' },
+                            { label: 'Privacy Policy', url: '#' },
+                            { label: 'Terms of Service', url: '#' },
+                            { label: 'Release Notes', url: '#' },
+                            { label: 'System Status', url: '#' },
+                        ].map(({ label, url }) => (
+                            <button
+                                key={label}
+                                onClick={() => url !== '#' && window.open(url, '_blank')}
+                                className="px-3 py-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-600 transition-all"
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <InfoNote color="blue">
+                    AgriAid.AI is an open-source project. All AI models, data processing, and features are continuously improved based on real farmer feedback and agricultural research.
+                </InfoNote>
+            </div>
+        ),
+    };
+
+    const activeNav = NAV.find(n => n.id === active);
+
+    return (
+        <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-5">
+
+            {/* Top bar */}
+            <div className="flex items-center justify-between mb-5 pb-4 border-b border-slate-100 dark:border-slate-800">
+                <div>
+                    <h1 className="text-base font-black text-slate-900 dark:text-white tracking-tight">
+                        Settings
+                    </h1>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+                        Manage your preferences & app configuration
+                    </p>
+                </div>
+                <motion.button whileTap={{ scale: 0.96 }} onClick={handleSave}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${
+                        saved
+                            ? 'bg-emerald-500 text-white'
+                            : 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white'
+                    }`}>
+                    {saved ? <Check className="h-3 w-3" /> : <Save className="h-3 w-3" />}
+                    {saved ? 'Saved!' : 'Save Changes'}
+                </motion.button>
+            </div>
+
+            {/* Two-column */}
+            <div className="flex gap-5 items-start">
+
+                {/* ── Sidebar ── */}
+                <aside className="w-52 shrink-0 sticky top-20 space-y-1">
+                    {NAV.map(({ id, label, icon: Icon, desc, accent, activeBg }) => (
+                        <button key={id} onClick={() => setActive(id)}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all group ${
+                                active === id
+                                    ? `${activeBg} border border-slate-200/60 dark:border-white/5`
+                                    : 'hover:bg-slate-50 dark:hover:bg-slate-800/50 border border-transparent'
+                            }`}>
+                            <Icon className={`h-3.5 w-3.5 shrink-0 transition-colors ${active === id ? accent : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300'}`} />
+                            <div className="flex-1 min-w-0">
+                                <p className={`text-xs font-semibold leading-none transition-colors ${active === id ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200'}`}>
+                                    {label}
+                                </p>
+                                <p className="text-[10px] text-slate-400 dark:text-slate-600 mt-0.5 truncate">{desc}</p>
+                            </div>
+                            {active === id && <ChevronRight className="h-3 w-3 text-slate-400 shrink-0" />}
+                        </button>
+                    ))}
+
+                    {/* Status card */}
+                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <div className="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl">
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+                                    <Sprout className="h-3 w-3 text-emerald-500" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200">AgriAid.AI</p>
+                                    <p className="text-[9px] text-slate-400 dark:text-slate-600">v3.0.0 · Production</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                                <span className="text-[9px] text-slate-400 dark:text-slate-600">All systems operational</span>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                {/* ── Content ── */}
+                <main className="flex-1 min-w-0">
+                    <AnimatePresence mode="wait">
+                        <motion.div key={active}
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -6 }}
+                            transition={{ duration: 0.15 }}
+                            className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+                            {sections[active]}
+                        </motion.div>
+                    </AnimatePresence>
+                </main>
             </div>
         </div>
     );

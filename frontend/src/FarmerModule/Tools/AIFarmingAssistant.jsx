@@ -266,18 +266,6 @@ const AIFarmingAssistant = () => {
 
     const getTime = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    // Init greeting + suggestions
-    useEffect(() => {
-        const greetingMsg = {
-            id: 'greeting',
-            role: 'bot',
-            content: cfg.greeting,
-            time: getTime()
-        };
-        setMessages([greetingMsg]);
-        fetchSuggestions();
-    }, [language, fetchSuggestions]);
-
     const fetchSuggestions = useCallback(async () => {
         try {
             const res = await apiClient.get(`/api/farmer/assistant/suggestions?language=${language}`);
@@ -293,6 +281,18 @@ const AIFarmingAssistant = () => {
             ]);
         }
     }, [language]);
+
+    // Init greeting + suggestions
+    useEffect(() => {
+        const greetingMsg = {
+            id: 'greeting',
+            role: 'bot',
+            content: cfg.greeting,
+            time: getTime()
+        };
+        setMessages([greetingMsg]);
+        fetchSuggestions();
+    }, [language, fetchSuggestions]);
 
     // Scroll to bottom on new message
     useEffect(() => {

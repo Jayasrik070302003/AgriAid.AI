@@ -1,5 +1,25 @@
 const { geminiChat } = require('../services/geminiAdvisor');
 const { groqVision } = require('../services/groqAnalyzer');
+const axios = require('axios');
+
+const GEMINI_25_FLASH = 'gemini-1.5-flash-latest';
+const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
+
+async function callGemini25Flash(systemPrompt, userMessage, { temperature = 0.5, maxTokens = 512 } = {}) {
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) throw new Error('GEMINI_API_KEY not set');
+    const body = {
+        contents: [{ role: 'user', parts: [{ text: userMessage }] }],
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        generationConfig: { temperature, maxOutputTokens: maxTokens }
+    };
+    const res = await axios.post(
+        `${GEMINI_BASE}/${GEMINI_25_FLASH}:generateContent?key=${key}`,
+        body,
+        { timeout: 30000 }
+    );
+    return res.data.candidates[0].content.parts[0].text.trim();
+}
 
 // ─── System Prompts per Language ──────────────────────────────────────────────
 const SYSTEM_PROMPTS = {
@@ -291,4 +311,61 @@ async function getSuggestedQuestions(req, res) {
     });
 }
 
-module.exports = { handleChat, handleImageAnalysis, getSuggestedQuestions };
+// ─── Explain Result Handler (Gemini 2.5 Flash) ───────────────────────────────
+async function explainResult(req, res) {
+    const { question, language = 'EN', context = {} } = req.body;
+    
+    try {
+        if (!question?.trim()) {
+            return res.status(400).json({ success: false, message: 'Question is required.' });
+        }
+
+        const langName = language === 'TA' ? 'Tamil' : language === 'HI' ? 'Hindi' : 'English';
+
+        const systemPrompt = `You are an agricultural explanation assistant. Explain crop analysis results in simple language. Answer only what the user asks. Use the current crop analysis as context. Avoid unnecessary technical jargon and long reports.
+
+STRICT RULES:
+- Answer ONLY the farmer's specific question. Do not add extra sections.
+- Keep responses concise: 150-200 words maximum.
+- Use bullet points for clarity when listing steps or items.
+- For definitions: 2-3 sentences + why it's relevant to THIS crop.
+- For "how-to" questions: 2-4 action steps only.
+- For "why" questions: 1-2 sentence explanation tied to the analysis.
+- Always respond in ${langName}.
+- Base all answers on the provided crop analysis context below.
+- Keep language simple and farmer-friendly.`;
+
+        const contextText = [
+            context.diseaseName   && `Crop: ${context.diseaseName}`,
+            context.confidence    && `Confidence Score: ${context.confidence}%`,
+            context.cureMethods   && `Cure Methods: ${context.cureMethods}`,
+            context.organicSolutions && `Organic Solutions: ${context.organicSolutions}`,
+            context.fertilizerSuggestions && `Fertilizer Guidance: ${context.fertilizerSuggestions}`,
+            context.irrigationAdvice && `Irrigation Advice: ${context.irrigationAdvice}`,
+            context.yieldProtectionAdvice && `Yield Protection: ${context.yieldProtectionAdvice}`,
+        ].filter(Boolean).join('\n');
+
+        const userMessage = `Crop Analysis Context:\n${contextText}\n\nFarmer's Question: ${question.trim()}\n\nProvide a direct, concise answer in ${langName}.`;
+
+        const reply = await callGemini25Flash(systemPrompt, userMessage, { temperature: 0.3, maxTokens: 400 });
+
+        return res.json({ success: true, reply: reply.trim() });
+
+    } catch (err) {
+        console.error('[explainResult] Error:', err.message);
+        console.error('[explainResult] Full error:', err.response?.data || err);
+        
+        const fallback = language === 'TA' 
+            ? 'மன்னிக்கவும், இப்போது பதில் சொல்ல முடியவில்லை. மீண்டும் முயற்சிக்கவும்.'
+            : language === 'HI'
+                ? 'माफ़ करें, अभी उत्तर नहीं दे पा रहा। कृपया पुनः प्रयास करें।'
+                : 'Sorry, could not get an answer right now. Please try again.';
+        
+        return res.status(500).json({
+            success: false,
+            message: fallback,
+        });
+    }
+}
+
+module.exports = { handleChat, handleImageAnalysis, getSuggestedQuestions, explainResult };

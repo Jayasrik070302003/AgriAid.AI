@@ -12,6 +12,7 @@
 ## 🚀 Features
 
 - **AI Crop Disease Analysis** — Upload leaf image → Get instant diagnosis + treatment
+- **Explain Result AI Assistant** — Ask questions about analysis results in Tamil, Hindi, or English (Powered by Gemini 1.5 Flash)
 - **Farming Chatbot** — Ask anything about crops, soil, fertilizers in simple English
 - **Impact Simulator** — Compare Organic vs Chemical farming ROI
 - **Future Growth Simulator** — 90-day yield & profit projection
@@ -84,7 +85,7 @@ npm run dev
 |---|---|---|
 | `GROQ_API_KEY` | Direct Groq API (fastest) | [console.groq.com](https://console.groq.com) |
 | `OPENROUTER_API_KEY` | OpenRouter gateway | [openrouter.ai](https://openrouter.ai) |
-| `GEMINI_API_KEY` | Google Gemini | [aistudio.google.com](https://aistudio.google.com) |
+| `GEMINI_API_KEY` | Google Gemini (1.5 Flash for Explain Assistant + fallback) | [aistudio.google.com](https://aistudio.google.com) |
 | `OPENWEATHER_API_KEY` | Live weather data | [openweathermap.org](https://openweathermap.org) |
 | `SUPABASE_URL` | Supabase project URL | Supabase Dashboard |
 | `SUPABASE_ANON_KEY` | Supabase anon key | Supabase Dashboard |
