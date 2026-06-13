@@ -327,31 +327,37 @@ export default function CropCalendar() {
                                     </div>
 
                                     {/* AI Summary */}
-                                    <div className="dark:bg-gradient-to-br dark:from-indigo-500/10 dark:to-[#0A1525] bg-indigo-50 dark:border-indigo-500/20 border-indigo-200 border rounded-2xl p-4">
-                                        <div className="flex items-start gap-3">
-                                            <div className="p-2 bg-indigo-500/10 rounded-xl shrink-0">
-                                                <TrendingUp className="w-4 h-4 text-indigo-500" />
+                                    <div className="relative overflow-hidden dark:bg-[#0A1525] bg-indigo-50 dark:border-indigo-500/30 border-indigo-200 border rounded-2xl p-4 shadow-sm">
+                                        {/* Premium Top Highlight */}
+                                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500 opacity-80" />
+                                        
+                                        <div className="flex items-start gap-3 mt-1">
+                                            <div className="p-2 dark:bg-indigo-500/20 bg-indigo-500/10 rounded-xl shrink-0 dark:border dark:border-indigo-500/20">
+                                                <TrendingUp className="w-4 h-4 dark:text-indigo-400 text-indigo-600" />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <div className="flex flex-col md:flex-row md:items-center justify-between mb-1.5 gap-1">
-                                                    <h3 className="dark:text-white text-slate-800 font-bold text-sm">AI Agronomist Report</h3>
-                                                    <div className="text-[10px] font-bold dark:text-slate-500 text-slate-400 dark:bg-black/40 bg-slate-200 px-2 py-0.5 rounded-full w-fit">
+                                                <div className="flex flex-col md:flex-row md:items-center justify-between mb-2 gap-2">
+                                                    <h3 className="dark:text-indigo-50 text-slate-900 font-black text-sm tracking-tight flex items-center gap-1.5">
+                                                        AI Agronomist Report
+                                                        <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20" />
+                                                    </h3>
+                                                    <div className="text-[10px] font-bold dark:text-indigo-300 text-indigo-700 dark:bg-indigo-500/10 bg-indigo-100 px-2.5 py-1 rounded-full w-fit border dark:border-indigo-500/20 border-indigo-200">
                                                         {calendarData.scientific_name}
                                                     </div>
                                                 </div>
-                                                <p className="dark:text-indigo-100/80 text-slate-600 text-xs leading-relaxed mb-3">{calendarData.ai_summary}</p>
-                                                <div className="grid grid-cols-3 gap-2 pt-3 dark:border-t dark:border-white/5 border-t border-indigo-100">
+                                                <p className="dark:text-slate-300 text-slate-700 text-xs leading-relaxed mb-4">{calendarData.ai_summary}</p>
+                                                <div className="grid grid-cols-3 gap-3 p-3 dark:bg-black/30 bg-white/50 rounded-xl border dark:border-white/5 border-slate-200/50">
                                                     <div>
-                                                        <div className="text-[9px] dark:text-slate-500 text-slate-400 uppercase tracking-widest">Market Demand</div>
-                                                        <div className={`text-xs font-bold ${getRiskColor(calendarData.market_demand).split(' ')[0]}`}>{calendarData.market_demand}</div>
+                                                        <div className="text-[9px] dark:text-slate-500 text-slate-500 font-bold uppercase tracking-widest mb-1">Market Demand</div>
+                                                        <div className={`text-xs font-black ${getRiskColor(calendarData.market_demand).split(' ')[0]}`}>{calendarData.market_demand}</div>
                                                     </div>
                                                     <div>
-                                                        <div className="text-[9px] dark:text-slate-500 text-slate-400 uppercase tracking-widest">Best Selling</div>
-                                                        <div className="text-xs font-bold text-amber-500">{calendarData.best_selling_month}</div>
+                                                        <div className="text-[9px] dark:text-slate-500 text-slate-500 font-bold uppercase tracking-widest mb-1">Best Selling</div>
+                                                        <div className="text-xs font-black text-amber-500">{calendarData.best_selling_month}</div>
                                                     </div>
                                                     <div>
-                                                        <div className="text-[9px] dark:text-slate-500 text-slate-400 uppercase tracking-widest">Sowing Window</div>
-                                                        <div className="text-xs font-bold text-emerald-500">{calendarData.recommended_sowing_window}</div>
+                                                        <div className="text-[9px] dark:text-slate-500 text-slate-500 font-bold uppercase tracking-widest mb-1">Sowing Window</div>
+                                                        <div className="text-xs font-black text-emerald-500">{calendarData.recommended_sowing_window}</div>
                                                     </div>
                                                 </div>
                                             </div>

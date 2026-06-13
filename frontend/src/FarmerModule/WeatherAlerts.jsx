@@ -136,10 +136,10 @@ const WeatherAlerts = () => {
 
     return (
         <div className="max-w-4xl mx-auto px-4 py-4">
-            <div className="mb-5 flex items-center justify-between">
-                <div>
-                    <h1 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2 dark:text-white">
-                        Weather Alerts <AlertTriangle className="h-5 w-5 text-farm-green" />
+            <div className="mb-5 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                    <h1 className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2 dark:text-white">
+                        Weather Alerts <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-farm-green shrink-0" />
                     </h1>
                     <p className="text-gray-500 text-[11px] mt-0.5 dark:text-slate-400">Real-time weather warnings for your location</p>
                 </div>
@@ -147,7 +147,7 @@ const WeatherAlerts = () => {
                 <button
                     onClick={detectGPS}
                     disabled={gpsLoading || loading}
-                    className="px-4 py-2 bg-farm-green text-white rounded-lg text-xs font-semibold hover:bg-emerald-600 transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm"
+                    className="px-3 py-1.5 sm:px-4 sm:py-2 bg-farm-green text-white rounded-lg text-xs font-semibold hover:bg-emerald-600 transition-colors disabled:opacity-50 flex items-center gap-1.5 shadow-sm shrink-0"
                 >
                     {gpsLoading || loading ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <MapPin className="h-3.5 w-3.5" />}
                     {gpsLoading || loading ? 'Loading...' : 'Detect Location'}
