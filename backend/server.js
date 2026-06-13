@@ -17,18 +17,17 @@ const allowedOrigins = [
     'http://127.0.0.1:5174',
 ];
 
-// Allow Netlify deploy previews
+// Allow Netlify and Render deploy previews
 const netlifyPattern = /^https:\/\/[a-z0-9-]+\.netlify\.app$/;
+const renderPattern = /^https:\/\/[a-z0-9-]+\.onrender\.com$/;
 
 app.use(cors({
     origin: (origin, callback) => {
-        // Allow requests with no origin (curl, Postman, mobile apps)
         if (!origin) return callback(null, true);
-        // Allow any localhost/127.0.0.1 port during development
         if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
             return callback(null, true);
         }
-        if (allowedOrigins.includes(origin) || netlifyPattern.test(origin)) {
+        if (allowedOrigins.includes(origin) || netlifyPattern.test(origin) || renderPattern.test(origin)) {
             return callback(null, true);
         }
         callback(new Error(`CORS blocked: ${origin}`));
