@@ -2,13 +2,11 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Sprout, Loader2, Leaf } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useLanguage } from '../Context/LanguageContext';
 import { useAuth } from '../Context/AuthContext';
 import { toast } from 'react-hot-toast';
 import Loader from '../SharedComponents/Loader';
 
 const LoginPage = () => {
-    const { t } = useLanguage();
     const { login } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
@@ -33,10 +31,10 @@ const LoginPage = () => {
         e.preventDefault();
         setIsLoading(true);
         setError('');
-        const loginToast = toast.loading(t('login_progress') || 'Securing your session...');
+        const loginToast = toast.loading('Securing your session...');
         try {
             await login({ email: formData.email, password: formData.password });
-            toast.success(t('login_success') || 'Welcome back to AgriAid!', { id: loginToast });
+            toast.success('Welcome back to AgriAid!', { id: loginToast });
             navigate(from, { replace: true });
         } catch (err) {
             const msg = err.message || 'Login failed. Check your credentials.';
@@ -48,185 +46,158 @@ const LoginPage = () => {
     };
 
     return (
-        <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-gray-900">
-            {isLoading && <Loader message={t('login_logging_in') || "Logging in..."} />}
+        <div className="h-screen w-full flex bg-[#0B1120] font-sans overflow-hidden">
+            {isLoading && <Loader message="Logging in..." />}
 
-            {/* 1. Dynamic Background */}
-            <div className="absolute inset-0 w-full h-full">
-                {/* Main Background Image */}
-                <div
-                    className="absolute inset-0 bg-cover bg-no-repeat transform scale-105"
-                    style={{
-                        backgroundImage: "url('/login_bg_v4.png')",
-                        backgroundPosition: "center center"
-                    }}
+            {/* Left Panel - Image / Brand Showcase (Hidden on Mobile) */}
+            {/* Left Panel - Image / Brand Showcase (Hidden on Mobile) */}
+            <div className="hidden lg:flex lg:w-1/2 relative flex-col justify-between p-12 overflow-hidden bg-black">
+                {/* Background Image */}
+                <div 
+                    className="absolute inset-0 bg-cover bg-center opacity-80"
+                    style={{ backgroundImage: "url('/farmer_working_bg.png')" }}
                 />
-
-                {/* Dark Overlay Gradient for text readability */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-emerald-950/40" />
-
-                {/* Animated Particles/Orbs (Subtle) */}
-                <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-emerald-500/20 rounded-full mix-blend-screen filter blur-[120px] animate-pulse opacity-40" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-teal-600/20 rounded-full mix-blend-screen filter blur-[120px] animate-pulse opacity-40 animation-delay-4000" />
-            </div>
-
-            {/* 2. Brand Logo (Top Left - Desktop Only) */}
-            <div className="absolute top-6 left-6 md:top-8 md:left-8 z-30 hidden md:block">
-                <Link to="/" className="flex items-center gap-3 group">
-                    <div className="bg-white/5 backdrop-blur-md border border-white/10 p-2.5 rounded-xl group-hover:bg-emerald-500/20 transition-all duration-300 shadow-2xl shadow-black/20">
-                        <Leaf className="h-6 w-6 text-emerald-400 group-hover:text-emerald-300 transition-colors" />
-                    </div>
-                    <div className="flex flex-col">
-                        <span className="text-xl font-bold tracking-tight text-white leading-none drop-shadow-lg">
-                            AgriAid<span className="text-emerald-400">.AI</span>
-                        </span>
-                        <span className="text-[10px] font-medium text-emerald-200/60 tracking-widest uppercase">SMART FARMING</span>
-                    </div>
+                
+                {/* Top: Logo */}
+                <Link to="/" className="relative z-10 flex items-center gap-3 w-fit bg-black/30 p-2 pr-4 rounded-2xl backdrop-blur-sm border border-white/10">
+                    <img src="/agriaid_logo.png" alt="AgriAid Logo" className="w-10 h-10 rounded-xl object-cover shadow-lg border border-emerald-500/20" />
+                    <span className="text-2xl font-bold !text-white tracking-tight drop-shadow-md">
+                        AgriAid<span className="text-emerald-400">.AI</span>
+                    </span>
                 </Link>
             </div>
 
-            {/* 3. Glassmorphism Login Card */}
-            <div className="w-full max-w-[380px] md:max-w-[440px] px-4 relative z-20">
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: 30 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
-                    className="bg-black/50 backdrop-blur-2xl rounded-3xl shadow-2xl shadow-black/80 p-7 md:p-10 border border-white/10 relative overflow-hidden"
-                >
-                    {/* Glowing Top Border */}
-                    <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
+            {/* Right Panel - Login Form */}
+            <div className="w-full lg:w-1/2 flex items-center justify-center px-4 py-4 sm:p-12 relative min-h-screen">
+                {/* Mobile Background Elements */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none lg:hidden">
+                    <div className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vw] rounded-full bg-emerald-900/20 blur-[100px]" />
+                    <div className="absolute bottom-[-20%] right-[-10%] w-[60vw] h-[60vw] rounded-full bg-teal-900/20 blur-[100px]" />
+                </div>
 
-                    <div className="text-center mb-8 mt-2">
-                        <motion.div
-                            initial={{ y: -10, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            transition={{ delay: 0.2 }}
-                            className="inline-flex flex-col items-center justify-center w-full"
-                        >
-                            <div className="md:hidden flex items-center gap-2 mb-6">
-                                <Leaf className="h-5 w-5 text-emerald-400" />
-                                <span className="text-lg font-bold tracking-tight text-white leading-none">
-                                    AgriAid<span className="text-emerald-400">.AI</span>
-                                </span>
-                            </div>
-                            
-                            <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-sm">
-                                {t('login_welcome')}
-                            </h2>
-                            <p className="text-emerald-100/60 text-xs md:text-sm mt-2 font-medium">
-                                {t('login_subtitle')}
-                            </p>
-                        </motion.div>
+                <div className="w-full max-w-[400px] relative z-10 flex flex-col">
+
+                    {/* Mobile Logo Header */}
+                    <div className="flex flex-col items-center mb-4 sm:mb-8 lg:hidden">
+                        <img src="/agriaid_logo.png" alt="AgriAid Logo" className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl shadow-lg shadow-emerald-500/20 mb-2 sm:mb-3 border border-emerald-500/20" />
+                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-0.5"
+                            style={{ textShadow: '0 0 20px rgba(16,185,129,0.4)' }}>
+                            <span className="!text-white drop-shadow-lg">AgriAid</span>
+                            <span className="text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]">.AI</span>
+                        </h1>
+                        <p className="text-slate-400 text-xs mt-1 font-medium">Sign in to your farm dashboard</p>
                     </div>
 
-                    {error && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="mb-5 flex items-start gap-3 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3"
-                        >
-                            <span className="text-red-400 mt-0.5">⚠️</span>
-                            <p className="text-red-300 text-sm font-medium">{error}</p>
-                        </motion.div>
-                    )}
-
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        <div className="space-y-1.5">
-                            <label className="block text-[10px] font-bold text-emerald-200/70 uppercase tracking-wider ml-1">
-                                {t('login_email')}
-                            </label>
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-emerald-500/50 group-focus-within:text-emerald-400 transition-colors">
-                                    <Mail className="h-5 w-5" />
-                                </div>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    required
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    className="block w-full pl-11 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-emerald-100/20 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-300 backdrop-blur-sm sm:text-sm shadow-inner hover:bg-white/10 [&:-webkit-autofill]:bg-transparent [&:-webkit-autofill]:[-webkit-text-fill-color:white] [&:-webkit-autofill]:[transition:background-color_9999s_ease-in-out_0s]"
-                                    placeholder="farmer@example.com"
-                                />
-                            </div>
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="w-full bg-[#111827]/60 backdrop-blur-2xl rounded-2xl p-5 sm:p-8 shadow-2xl border border-white/5"
+                    >
+                        {/* Desktop Header */}
+                        <div className="hidden lg:block mb-8">
+                            <h2 className="text-2xl font-bold text-white mb-2">Welcome Back</h2>
+                            <p className="text-slate-400 text-sm font-medium">Sign in to your account to continue</p>
                         </div>
+                        {/* Mobile Header */}
+                        <h2 className="text-lg sm:text-xl font-bold text-white mb-4 text-center lg:hidden">Welcome Back</h2>
 
-                        <div className="space-y-1.5">
-                            <div className="flex items-center justify-between ml-1">
-                                <label className="block text-[10px] font-bold text-emerald-200/70 uppercase tracking-wider">
-                                    {t('login_password')}
-                                </label>
-                                <button
-                                    type="button"
-                                    onClick={() => toast('Password reset: contact support or use Supabase dashboard.', { icon: 'ℹ️' })}
-                                    className="text-[10px] font-semibold text-emerald-400 hover:text-emerald-300 transition-colors bg-transparent border-none cursor-pointer"
-                                >
-                                    {t('login_forgot')}
-                                </button>
+                        {error && (
+                            <div className="mb-3 flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl p-3">
+                                <span className="text-red-400 text-base">⚠️</span>
+                                <p className="text-red-400 text-xs font-medium">{error}</p>
                             </div>
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-emerald-500/50 group-focus-within:text-emerald-400 transition-colors">
-                                    <Lock className="h-5 w-5" />
+                        )}
+
+                        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-5">
+                            {/* Email Field */}
+                            <div className="space-y-1">
+                                <label className="block text-[10px] sm:text-xs font-bold text-slate-300 uppercase tracking-wider ml-1">Email Address</label>
+                                <div className="relative group">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500 group-focus-within:text-emerald-400 transition-colors">
+                                        <Mail className="h-4 w-4" />
+                                    </div>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        required
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                        className="block w-full pl-9 pr-4 py-2.5 sm:py-3.5 bg-[#0B1120]/50 border border-slate-700/50 rounded-xl text-white text-sm placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
+                                        placeholder="farmer@example.com"
+                                        style={{ WebkitBoxShadow: '0 0 0px 1000px #080c17 inset', WebkitTextFillColor: 'white' }}
+                                    />
                                 </div>
-                                <input
-                                    type={showPassword ? 'text' : 'password'}
-                                    name="password"
-                                    required
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    className="block w-full pl-11 pr-12 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-emerald-100/20 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-300 backdrop-blur-sm sm:text-sm shadow-inner hover:bg-white/10 [&:-webkit-autofill]:bg-transparent [&:-webkit-autofill]:[-webkit-text-fill-color:white] [&:-webkit-autofill]:[transition:background-color_9999s_ease-in-out_0s]"
-                                    placeholder="••••••••"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-emerald-500/50 hover:text-emerald-300 transition-colors cursor-pointer"
-                                >
-                                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                                </button>
                             </div>
+
+                            {/* Password Field */}
+                            <div className="space-y-1">
+                                <div className="flex items-center justify-between ml-1">
+                                    <label className="block text-[10px] sm:text-xs font-bold text-slate-300 uppercase tracking-wider">Password</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => toast('Password reset: contact support.', { icon: 'ℹ️' })}
+                                        className="text-[10px] sm:text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer"
+                                    >
+                                        Forgot Password?
+                                    </button>
+                                </div>
+                                <div className="relative group">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500 group-focus-within:text-emerald-400 transition-colors">
+                                        <Lock className="h-4 w-4" />
+                                    </div>
+                                    <input
+                                        type={showPassword ? 'text' : 'password'}
+                                        name="password"
+                                        required
+                                        value={formData.password}
+                                        onChange={handleChange}
+                                        className="block w-full pl-9 pr-10 py-2.5 sm:py-3.5 bg-[#0B1120]/50 border border-slate-700/50 rounded-xl text-white text-sm placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
+                                        placeholder="••••••••"
+                                        style={{ WebkitBoxShadow: '0 0 0px 1000px #080c17 inset', WebkitTextFillColor: 'white' }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-emerald-400 transition-colors cursor-pointer"
+                                    >
+                                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Submit Button */}
+                            <button
+                                type="submit"
+                                disabled={isLoading}
+                                className="w-full flex justify-center items-center py-2.5 sm:py-4 px-4 mt-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white text-sm font-bold rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.2)] transition-all hover:shadow-[0_0_25px_rgba(16,185,129,0.3)] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isLoading ? (
+                                    <Loader2 className="animate-spin h-4 w-4" />
+                                ) : (
+                                    <>
+                                        Sign In <ArrowRight className="ml-2 h-4 w-4" />
+                                    </>
+                                )}
+                            </button>
+                        </form>
+
+                        {/* Sign Up Link */}
+                        <div className="mt-4 sm:mt-8 pt-3 sm:pt-6 border-t border-white/5 text-center">
+                            <p className="text-xs sm:text-sm text-slate-400 font-medium">
+                                Don't have an account?{' '}
+                                <Link to="/register" className="text-emerald-400 font-bold hover:text-emerald-300 transition-colors ml-1">
+                                    Sign Up
+                                </Link>
+                            </p>
                         </div>
+                    </motion.div>
 
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="w-full flex justify-center items-center py-4 px-4 mt-6 border border-emerald-500/30 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.3)] text-sm font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/20 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-300 transform hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] active:scale-[0.98]"
-                        >
-                            {isLoading ? (
-                                <>
-                                    <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5" />
-                                    {t('login_logging_in')}
-                                </>
-                            ) : (
-                                <>
-                                    {t('login_btn')} <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                                </>
-                            )}
-                        </button>
-                    </form>
-
-                    <div className="mt-8 pt-6 border-t border-white/10 text-center">
-                        <p className="text-sm font-medium text-emerald-100/60">
-                            {t('login_no_account')}{' '}
-                            <Link to="/register" className="font-bold text-emerald-400 hover:text-emerald-300 transition-colors ml-1 inline-flex items-center group">
-                                {t('login_signup')}
-                                <ArrowRight className="h-3 w-3 ml-1 transform group-hover:translate-x-1 transition-transform" />
-                            </Link>
+                    <div className="mt-3 text-center lg:hidden">
+                        <p className="text-slate-600 text-[10px] uppercase tracking-widest font-semibold">
+                            &copy; 2026 AgriAid AI Systems
                         </p>
                     </div>
-                </motion.div>
-
-                {/* 4. Footer */}
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5 }}
-                    className="mt-6 text-center relative z-20"
-                >
-                    <p className="text-white/30 text-[10px] font-medium tracking-[0.2em] uppercase">
-                        &copy; 2026 AgriAid AI Systems
-                    </p>
-                </motion.div>
+                </div>
             </div>
         </div>
     );

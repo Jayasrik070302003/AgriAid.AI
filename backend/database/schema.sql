@@ -48,6 +48,18 @@ CREATE INDEX IF NOT EXISTS idx_crop_scans_user ON crop_scans(user_id);
 CREATE INDEX IF NOT EXISTS idx_simulations_user ON simulations(user_id);
 CREATE INDEX IF NOT EXISTS idx_crop_scans_created ON crop_scans(created_at DESC);
 
+-- Profiles table (for editable farmer profile data)
+CREATE TABLE IF NOT EXISTS profiles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email TEXT UNIQUE NOT NULL,
+    name TEXT,
+    phone TEXT,
+    location TEXT,
+    avatar_url TEXT,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_profiles_email ON profiles(email);
+
 -- Storage Buckets Setup
 -- 1. Create crop-images bucket if it doesn't exist
 INSERT INTO storage.buckets (id, name, public)

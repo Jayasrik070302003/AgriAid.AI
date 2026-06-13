@@ -276,29 +276,30 @@ Keep it practical, simple, and suitable for small Indian farmers. Use bullet poi
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 pb-24 sm:pb-8">
 
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-700 to-emerald-600 text-white px-4 sm:px-6 py-6 sm:py-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 sm:p-3 bg-white/20 rounded-xl backdrop-blur-sm shrink-0">
-              <Leaf className="w-5 h-5 sm:w-7 sm:h-7" />
+      <div className="bg-gradient-to-r from-emerald-600 to-green-600 text-white px-4 sm:px-6 py-4 sm:py-5 border-b border-emerald-700/50 shadow-sm">
+        <div className="max-w-4xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 sm:p-2.5 bg-white/15 rounded-xl backdrop-blur-md shrink-0 border border-white/10 shadow-sm">
+              <Leaf className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-50" />
             </div>
-            <div className="min-w-0">
-              <h1 className="text-xl sm:text-2xl font-bold truncate">Organic Farming Guide</h1>
-              <p className="text-xs sm:text-sm text-green-100 mt-0.5">Homemade recipes + AI solutions for Indian farmers</p>
+            <div>
+              <h1 className="text-lg sm:text-xl font-black tracking-tight leading-tight">Organic Farming Guide</h1>
+              <p className="text-[11px] sm:text-xs text-emerald-100 mt-0.5">Homemade recipes + AI solutions</p>
             </div>
           </div>
+          
           {/* Stats Row */}
-          <div className="flex gap-3 mt-4 overflow-x-auto pb-1 no-scrollbar">
+          <div className="flex flex-wrap gap-2 sm:gap-3 mt-1 md:mt-0 shrink-0">
             {[
               { label: 'Recipes', value: '10+', icon: '🌿' },
               { label: 'Zero Cost', value: 'Options', icon: '💰' },
               { label: 'AI Powered', value: 'Custom', icon: '🤖' },
             ].map((s) => (
-              <div key={s.label} className="shrink-0 flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-xl px-3 py-2">
-                <span className="text-base">{s.icon}</span>
-                <div>
-                  <p className="text-xs font-bold text-white">{s.value}</p>
-                  <p className="text-[10px] text-green-100">{s.label}</p>
+              <div key={s.label} className="shrink-0 flex items-center gap-1.5 sm:gap-2 bg-black/10 hover:bg-black/20 transition-colors backdrop-blur-md rounded-lg px-2.5 sm:px-3 py-1.5 border border-white/10">
+                <span className="text-sm sm:text-base">{s.icon}</span>
+                <div className="leading-none text-left">
+                  <p className="text-[10px] sm:text-xs font-bold text-white mb-0.5">{s.value}</p>
+                  <p className="text-[8px] sm:text-[9px] font-semibold uppercase tracking-wider text-emerald-100">{s.label}</p>
                 </div>
               </div>
             ))}

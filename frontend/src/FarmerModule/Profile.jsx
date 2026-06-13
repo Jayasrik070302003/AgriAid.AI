@@ -1,248 +1,335 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Phone, MapPin, Save, Sprout, Activity, AlertTriangle, ShieldCheck, CheckCircle, X, Camera } from 'lucide-react';
-import { useLanguage } from '../Context/LanguageContext';
+import { User, Mail, Phone, MapPin, Save, Sprout, Activity, AlertTriangle, ShieldCheck, CheckCircle, X, Camera, Edit3, Loader2 } from 'lucide-react';
 import { useAuth } from '../Context/AuthContext';
+import { supabase } from '../services/supabaseClient';
+import { toast } from 'react-hot-toast';
+
+const STATS = [
+    { label: 'Total Scans', key: 'total', icon: Activity, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/30' },
+    { label: 'Healthy', key: 'healthy', icon: ShieldCheck, color: 'text-green-500', bg: 'bg-green-50 dark:bg-green-900/30' },
+    { label: 'Issues', key: 'issues', icon: AlertTriangle, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/30' },
+];
+
+const Field = ({ icon: Icon, label, name, type = 'text', value, disabled, onChange }) => (
+    <div className="space-y-1.5">
+        <label className="text-[11px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider ml-1">{label}</label>
+        <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 dark:text-slate-500">
+                <Icon className="h-4 w-4" />
+            </div>
+            <input
+                type={type}
+                name={name}
+                value={value}
+                disabled={disabled}
+                onChange={onChange}
+                className="block w-full pl-10 pr-3 py-2.5 text-[13px] rounded-xl border transition-all font-medium
+                    bg-gray-50 border-gray-200 text-gray-900
+                    dark:bg-slate-700/50 dark:border-slate-600 dark:text-white
+                    disabled:opacity-60 disabled:cursor-not-allowed
+                    focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:bg-white dark:focus:bg-slate-700"
+            />
+        </div>
+    </div>
+);
 
 const Profile = () => {
-    const { t } = useLanguage();
     const { user } = useAuth();
-
-    // Placeholder stats - in a real app, these would come from the backend
-    const stats = [
-        { label: 'profile_stat_scans', value: '124', icon: Activity, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/30' },
-        { label: 'profile_stat_healthy', value: '86', icon: ShieldCheck, color: 'text-green-500', bg: 'bg-green-50 dark:bg-green-900/30' },
-        { label: 'profile_stat_issues', value: '38', icon: AlertTriangle, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/30' },
-    ];
-
     const [isEditing, setIsEditing] = useState(false);
-    const [showSuccess, setShowSuccess] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [stats, setStats] = useState({ total: '—', healthy: '—', issues: '—' });
     const [formData, setFormData] = useState({
-        name: user?.name || 'Test Farmer',
-        email: user?.email || 'farmer@example.com',
-        phone: '+91 98765 43210',
-        location: 'Pune, Maharashtra',
-        avatar: user?.avatar || null
+        name: '',
+        email: '',
+        phone: '',
+        location: '',
+        avatar: null,
     });
-
+    const [preview, setPreview] = useState(null);
     const fileInputRef = React.useRef(null);
+
+    // Load user data + scan stats on mount
+    useEffect(() => {
+        if (!user) return;
+        setFormData(prev => ({
+            ...prev,
+            name: user.name || '',
+            email: user.email || '',
+        }));
+        loadProfile();
+        loadStats();
+    }, [user]);
+
+    const loadProfile = async () => {
+        if (!supabase || !user?.email) return;
+        try {
+            const { data } = await supabase
+                .from('profiles')
+                .select('phone, location, avatar_url')
+                .eq('email', user.email)
+                .single();
+            if (data) {
+                setFormData(prev => ({
+                    ...prev,
+                    phone: data.phone || '',
+                    location: data.location || '',
+                    avatar: data.avatar_url || null,
+                }));
+                if (data.avatar_url) setPreview(data.avatar_url);
+            }
+        } catch (_) {
+            // profiles table may not exist yet — silently ignore
+        }
+    };
+
+    const loadStats = async () => {
+        if (!supabase) return;
+        try {
+            const { data: { user: authUser } } = await supabase.auth.getUser();
+            if (!authUser) return;
+            const { data } = await supabase
+                .from('crop_scans')
+                .select('disease_name')
+                .eq('user_id', authUser.id);
+            if (data) {
+                const total = data.length;
+                const healthy = data.filter(d => d.disease_name?.toLowerCase().includes('healthy')).length;
+                setStats({ total, healthy, issues: total - healthy });
+            }
+        } catch (_) {}
+    };
 
     const handleImageUpload = (e) => {
         const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setFormData(prev => ({
-                    ...prev,
-                    avatar: reader.result
-                }));
-            };
-            reader.readAsDataURL(file);
-        }
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onloadend = () => setPreview(reader.result);
+        reader.readAsDataURL(file);
     };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSave = () => {
-        setIsEditing(false);
-        setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 3000);
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            let avatarUrl = formData.avatar;
+
+            // Upload avatar if new image selected
+            if (preview && preview !== formData.avatar && preview.startsWith('data:') && supabase) {
+                const base64 = preview.split(',')[1];
+                const byteArray = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+                const fileName = `avatar_${user.email}_${Date.now()}.jpg`;
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('crop-images')
+                    .upload(fileName, byteArray, { contentType: 'image/jpeg', upsert: true });
+                if (!uploadError) {
+                    const { data: { publicUrl } } = supabase.storage.from('crop-images').getPublicUrl(fileName);
+                    avatarUrl = publicUrl;
+                }
+            }
+
+            // Upsert profile in Supabase
+            if (supabase && user?.email) {
+                const { error } = await supabase
+                    .from('profiles')
+                    .upsert({
+                        email: user.email,
+                        name: formData.name,
+                        phone: formData.phone,
+                        location: formData.location,
+                        avatar_url: avatarUrl,
+                        updated_at: new Date().toISOString(),
+                    }, { onConflict: 'email' });
+                if (error) throw error;
+            }
+
+            // Also update display name in Supabase Auth
+            if (supabase) {
+                await supabase.auth.updateUser({ data: { name: formData.name } });
+            }
+
+            setFormData(prev => ({ ...prev, avatar: avatarUrl }));
+            setIsEditing(false);
+            toast.success('Profile saved successfully!');
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to save profile. Please try again.');
+        } finally {
+            setIsSaving(false);
+        }
     };
+
+    const handleCancel = () => {
+        setPreview(formData.avatar);
+        setIsEditing(false);
+    };
+
+    const avatarSrc = isEditing ? (preview || formData.avatar) : (formData.avatar || preview);
+    const initials = formData.name ? formData.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'FA';
 
     return (
-        <div className="max-w-5xl mx-auto space-y-5 relative">
-            {/* Success Notification */}
-            <AnimatePresence>
-                {showSuccess && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -50, x: '-50%' }}
-                        animate={{ opacity: 1, y: 0, x: '-50%' }}
-                        exit={{ opacity: 0, y: -50, x: '-50%' }}
-                        className="fixed top-20 left-1/2 z-50 flex items-center gap-2.5 bg-white px-4 py-3 rounded-xl shadow-2xl shadow-green-500/20 border border-green-100 dark:bg-slate-800 dark:border-green-900/30 dark:shadow-none"
-                    >
-                        <div className="bg-green-100 p-1.5 rounded-full dark:bg-green-900/30">
-                            <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-                        </div>
-                        <div>
-                            <h4 className="text-xs font-bold text-gray-900 dark:text-white">Success</h4>
-                            <p className="text-[10px] text-gray-500 dark:text-slate-400">Profile updated successfully!</p>
-                        </div>
-                        <button
-                            onClick={() => setShowSuccess(false)}
-                            className="ml-3 p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors dark:hover:bg-slate-700 dark:text-slate-500 dark:hover:text-white"
-                        >
-                            <X className="h-3 w-3" />
-                        </button>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+        <div className="max-w-3xl mx-auto pb-24 sm:pb-8 space-y-4 sm:space-y-6 px-0 sm:px-0">
 
-            {/* Header / Hero Section */}
+            {/* Hero Card */}
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 relative overflow-hidden dark:bg-slate-800 dark:border-slate-700"
+                className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-xl"
             >
-                <div className="absolute top-0 right-0 w-48 h-48 bg-farm-green/5 rounded-bl-full -mr-12 -mt-12 z-0" />
+                {/* Background pattern */}
+                <div className="absolute inset-0 opacity-10"
+                    style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M0 20L20 0H10L0 10M20 20V10L10 20'/%3E%3C/g%3E%3C/svg%3E\")" }}
+                />
+                <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
 
-                <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-6">
-                    {/* Avatar */}
-                    <div className="relative group cursor-pointer" onClick={() => isEditing && fileInputRef.current.click()}>
-                        <div className="w-20 h-20 rounded-full border-4 border-white shadow-lg bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center overflow-hidden relative">
-                            {formData.avatar ? (
-                                <img src={formData.avatar} alt="Profile" className="w-full h-full object-cover" />
-                            ) : (
-                                <User className="h-10 w-10 text-gray-400" />
-                            )}
-
-                            {/* Overlay for Edit Mode */}
-                            {isEditing && (
-                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Camera className="h-6 w-6 text-white" />
-                                </div>
-                            )}
+                <div className="relative p-5 sm:p-8">
+                    <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 sm:gap-6">
+                        {/* Avatar */}
+                        <div className="relative shrink-0">
+                            <div
+                                className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border-4 border-white/30 shadow-xl overflow-hidden bg-white/20 flex items-center justify-center cursor-pointer"
+                                onClick={() => isEditing && fileInputRef.current?.click()}
+                            >
+                                {avatarSrc ? (
+                                    <img src={avatarSrc} alt="Avatar" className="w-full h-full object-cover" />
+                                ) : (
+                                    <span className="text-2xl sm:text-3xl font-black text-white">{initials}</span>
+                                )}
+                                {isEditing && (
+                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                        <Camera className="w-6 h-6 text-white" />
+                                    </div>
+                                )}
+                            </div>
+                            <div className="absolute -bottom-1 -right-1 bg-emerald-400 rounded-lg p-1.5 shadow-lg border-2 border-white/30">
+                                <Sprout className="w-3 h-3 text-white" />
+                            </div>
+                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
                         </div>
 
-                        {/* Status Icon (Sprout) */}
-                        <div className="absolute bottom-0 right-0 bg-farm-green text-white p-1.5 rounded-full shadow-lg border-2 border-white pointer-events-none">
-                            <Sprout className="h-3 w-3" />
+                        {/* Name + location */}
+                        <div className="text-center sm:text-left flex-1 min-w-0">
+                            <h1 className="text-xl sm:text-2xl font-black text-white truncate">
+                                {formData.name || 'Farmer'}
+                            </h1>
+                            <p className="text-emerald-100 text-xs sm:text-sm mt-1 flex items-center justify-center sm:justify-start gap-1.5">
+                                <MapPin className="w-3.5 h-3.5 shrink-0" />
+                                <span className="truncate">{formData.location || 'Location not set'}</span>
+                            </p>
+                            <p className="text-emerald-200 text-xs mt-0.5">{formData.email}</p>
                         </div>
 
-                        {/* Hidden File Input */}
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            className="hidden"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                        />
+                        {/* Edit button */}
+                        {!isEditing && (
+                            <button
+                                onClick={() => setIsEditing(true)}
+                                className="shrink-0 flex items-center gap-1.5 px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl text-white text-xs font-bold transition-all border border-white/20"
+                            >
+                                <Edit3 className="w-3.5 h-3.5" /> Edit Profile
+                            </button>
+                        )}
                     </div>
 
-                    {/* Info */}
-                    <div className="text-center md:text-left flex-1">
-                        <h1 className="text-xl font-bold text-gray-900 tracking-tight dark:text-white">{formData.name}</h1>
-                        <p className="text-gray-500 text-[12px] mt-1 flex items-center justify-center md:justify-start gap-1.5 dark:text-slate-400">
-                            <MapPin className="h-3 w-3" /> {formData.location}
-                        </p>
-
-                        {/* Stats Grid */}
-                        <div className="grid grid-cols-3 gap-3 mt-5">
-                            {stats.map((stat, idx) => (
-                                <div key={idx} className="bg-gray-50 rounded-xl p-3 border border-gray-100 dark:bg-slate-700 dark:border-slate-600">
-                                    <div className={`${stat.bg} w-8 h-8 rounded-lg flex items-center justify-center mb-2 mx-auto md:mx-0`}>
-                                        <stat.icon className={`h-4 w-4 ${stat.color}`} />
-                                    </div>
-                                    <div className="text-lg font-bold text-gray-900 dark:text-white">{stat.value}</div>
-                                    <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide dark:text-slate-400">{t(stat.label)}</div>
-                                </div>
-                            ))}
-                        </div>
+                    {/* Stats Row */}
+                    <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-5">
+                        {STATS.map((s) => (
+                            <div key={s.key} className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/10 text-center">
+                                <s.icon className="w-4 h-4 mx-auto mb-1 text-emerald-200" />
+                                <div className="text-lg sm:text-xl font-black text-white">{stats[s.key]}</div>
+                                <div className="text-[10px] text-emerald-200 font-semibold">{s.label}</div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </motion.div>
 
-            {/* Details Form */}
+            {/* Form Card */}
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden dark:bg-slate-800 dark:border-slate-700"
+                className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 overflow-hidden"
             >
-                <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 dark:bg-slate-800/50 dark:border-slate-700">
-                    <h2 className="text-base font-bold text-gray-900 dark:text-white">{t('profile_details')}</h2>
-                    <button
-                        onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-                        className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all shadow-sm flex items-center gap-2 ${isEditing
-                            ? 'bg-farm-green text-white hover:bg-emerald-600 shadow-green-200 dark:hover:bg-emerald-500'
-                            : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 dark:bg-slate-700 dark:text-white dark:border-slate-600 dark:hover:bg-slate-600'
-                            }`}
-                    >
+                {/* Card Header */}
+                <div className="px-5 sm:px-6 py-4 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between bg-gray-50/50 dark:bg-slate-800/50">
+                    <div>
+                        <h2 className="text-sm font-bold text-gray-900 dark:text-white">Personal Details</h2>
+                        <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5">
+                            {isEditing ? 'Make your changes and save' : 'Your profile information'}
+                        </p>
+                    </div>
+                    <AnimatePresence mode="wait">
                         {isEditing ? (
-                            <><Save className="h-3.5 w-3.5" /> {t('profile_save')}</>
+                            <motion.div key="editing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2">
+                                <button
+                                    onClick={handleCancel}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSave}
+                                    disabled={isSaving}
+                                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white transition-all disabled:opacity-60 shadow-lg shadow-emerald-500/20"
+                                >
+                                    {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                                    {isSaving ? 'Saving...' : 'Save Changes'}
+                                </button>
+                            </motion.div>
                         ) : (
-                            <><User className="h-3.5 w-3.5" /> Edit Profile</>
+                            <motion.button
+                                key="view"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                onClick={() => setIsEditing(true)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all"
+                            >
+                                <Edit3 className="w-3.5 h-3.5" /> Edit
+                            </motion.button>
                         )}
-                    </button>
+                    </AnimatePresence>
                 </div>
 
-                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {/* Name */}
-                    <div className="space-y-1.5">
-                        <label className="text-[11px] font-semibold text-gray-700 ml-1 dark:text-slate-300 uppercase tracking-wider">{t('profile_name')}</label>
-                        <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                                <User className="h-4 w-4" />
-                            </div>
-                            <input
-                                type="text"
-                                name="name"
-                                disabled={!isEditing}
-                                value={formData.name}
-                                onChange={handleChange}
-                                className="block w-full pl-10 pr-3 py-2.5 text-[13px] bg-gray-50 border-transparent rounded-xl focus:bg-white focus:border-farm-green focus:ring-0 transition-all disabled:opacity-60 disabled:cursor-not-allowed font-medium text-gray-900 dark:bg-slate-700 dark:text-white dark:focus:bg-slate-800"
-                            />
-                        </div>
-                    </div>
+                {/* Fields */}
+                <div className="p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Field icon={User} label="Full Name" name="name" value={formData.name} disabled={!isEditing} onChange={handleChange} />
+                    <Field icon={Mail} label="Email Address" name="email" type="email" value={formData.email} disabled onChange={handleChange} />
+                    <Field icon={Phone} label="Phone Number" name="phone" type="tel" value={formData.phone} disabled={!isEditing} onChange={handleChange} />
+                    <Field icon={MapPin} label="Farm Location" name="location" value={formData.location} disabled={!isEditing} onChange={handleChange} />
+                </div>
 
-                    {/* Email */}
-                    <div className="space-y-1.5">
-                        <label className="text-[11px] font-semibold text-gray-700 ml-1 dark:text-slate-300 uppercase tracking-wider">{t('profile_email')}</label>
-                        <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                                <Mail className="h-4 w-4" />
-                            </div>
-                            <input
-                                type="email"
-                                name="email"
-                                disabled={!isEditing}
-                                value={formData.email}
-                                onChange={handleChange}
-                                className="block w-full pl-10 pr-3 py-2.5 text-[13px] bg-gray-50 border-transparent rounded-xl focus:bg-white focus:border-farm-green focus:ring-0 transition-all disabled:opacity-60 disabled:cursor-not-allowed font-medium text-gray-900 dark:bg-slate-700 dark:text-white dark:focus:bg-slate-800"
-                            />
-                        </div>
-                    </div>
+                {/* Email locked note */}
+                <div className="px-5 sm:px-6 pb-5">
+                    <p className="text-[11px] text-gray-400 dark:text-slate-500 flex items-center gap-1.5">
+                        <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-slate-600 inline-block" />
+                        Email address cannot be changed. Contact support if needed.
+                    </p>
+                </div>
+            </motion.div>
 
-                    {/* Phone */}
-                    <div className="space-y-1.5">
-                        <label className="text-[11px] font-semibold text-gray-700 ml-1 dark:text-slate-300 uppercase tracking-wider">{t('profile_phone')}</label>
-                        <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                                <Phone className="h-4 w-4" />
-                            </div>
-                            <input
-                                type="tel"
-                                name="phone"
-                                disabled={!isEditing}
-                                value={formData.phone}
-                                onChange={handleChange}
-                                className="block w-full pl-10 pr-3 py-2.5 text-[13px] bg-gray-50 border-transparent rounded-xl focus:bg-white focus:border-farm-green focus:ring-0 transition-all disabled:opacity-60 disabled:cursor-not-allowed font-medium text-gray-900 dark:bg-slate-700 dark:text-white dark:focus:bg-slate-800"
-                            />
+            {/* Account Info Card */}
+            <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-5 sm:p-6"
+            >
+                <h2 className="text-sm font-bold text-gray-900 dark:text-white mb-4">Account Info</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {[
+                        { label: 'Account Type', value: 'Farmer' },
+                        { label: 'Member Since', value: '2025' },
+                        { label: 'Status', value: 'Active ✓' },
+                    ].map(({ label, value }) => (
+                        <div key={label} className="bg-gray-50 dark:bg-slate-700/50 rounded-xl p-3 border border-gray-100 dark:border-slate-600">
+                            <p className="text-[10px] text-gray-400 dark:text-slate-500 font-semibold uppercase tracking-wider mb-1">{label}</p>
+                            <p className="text-sm font-bold text-gray-800 dark:text-white">{value}</p>
                         </div>
-                    </div>
-
-                    {/* Location */}
-                    <div className="space-y-1.5">
-                        <label className="text-[11px] font-semibold text-gray-700 ml-1 dark:text-slate-300 uppercase tracking-wider">{t('profile_location')}</label>
-                        <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                                <MapPin className="h-4 w-4" />
-                            </div>
-                            <input
-                                type="text"
-                                name="location"
-                                disabled={!isEditing}
-                                value={formData.location}
-                                onChange={handleChange}
-                                className="block w-full pl-10 pr-3 py-2.5 text-[13px] bg-gray-50 border-transparent rounded-xl focus:bg-white focus:border-farm-green focus:ring-0 transition-all disabled:opacity-60 disabled:cursor-not-allowed font-medium text-gray-900 dark:bg-slate-700 dark:text-white dark:focus:bg-slate-800"
-                            />
-                        </div>
-                    </div>
+                    ))}
                 </div>
             </motion.div>
         </div>

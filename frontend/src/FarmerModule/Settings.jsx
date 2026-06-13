@@ -125,55 +125,62 @@ const Settings = () => {
                 <div className="space-y-2.5">
                     {themes.map(({ id, label, icon: Icon, preview }) => (
                         <button key={id} onClick={() => setTheme(id)}
-                            className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all group ${
+                            className={`w-full flex items-center justify-between p-3.5 sm:p-4 rounded-xl border-2 transition-all group ${
                                 theme === id
                                     ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/10 shadow-sm'
                                     : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/30 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/60'
                             }`}>
-                            {/* Icon */}
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all ${
-                                theme === id 
-                                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' 
-                                    : 'bg-slate-100 dark:bg-slate-700 text-slate-400'
-                            }`}>
-                                <Icon className="h-5 w-5" />
-                            </div>
                             
-                            {/* Text */}
-                            <div className="flex-1 text-left">
-                                <p className={`text-sm font-bold mb-0.5 transition-colors ${
-                                    theme === id ? 'text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'
+                            {/* Left Side: Icon & Text */}
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 transition-all ${
+                                    theme === id 
+                                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' 
+                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-400'
                                 }`}>
-                                    {label === 'Dark AI' ? 'DARK AI THEME' : label === 'Light' ? 'LIGHT THEME' : label === 'Green Agri' ? 'GREEN AGRI THEME' : 'CYBER NEON THEME'}
-                                </p>
-                                <p className={`text-[11px] transition-colors ${
-                                    theme === id ? 'text-slate-600 dark:text-slate-400' : 'text-slate-400 dark:text-slate-500'
-                                }`}>
-                                    {label === 'Dark AI' ? 'Deep tech carbon space' : label === 'Light' ? 'Clean ultra-crisp slate' : label === 'Green Agri' ? 'Eco-friendly natural vibe' : 'Futuristic vibrant synth'}
-                                </p>
+                                    <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                                </div>
+                                
+                                <div className="text-left min-w-0 pr-2">
+                                    <p className={`text-xs sm:text-sm font-bold mb-0.5 transition-colors truncate ${
+                                        theme === id ? 'text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'
+                                    }`}>
+                                        {label === 'Dark AI' ? 'DARK AI THEME' : label === 'Light' ? 'LIGHT THEME' : label === 'Green Agri' ? 'GREEN AGRI THEME' : 'CYBER NEON THEME'}
+                                    </p>
+                                    <p className={`text-[10px] sm:text-[11px] transition-colors truncate ${
+                                        theme === id ? 'text-slate-600 dark:text-slate-400' : 'text-slate-400 dark:text-slate-500'
+                                    }`}>
+                                        {label === 'Dark AI' ? 'Deep tech carbon space' : label === 'Light' ? 'Clean ultra-crisp slate' : label === 'Green Agri' ? 'Eco-friendly natural vibe' : 'Futuristic vibrant synth'}
+                                    </p>
+                                </div>
                             </div>
                             
-                            {/* Color Preview */}
-                            <div className="flex gap-1.5 shrink-0">
-                                {preview.map((color, idx) => (
-                                    <div 
-                                        key={idx} 
-                                        className="w-5 h-5 rounded-full border-2 border-white dark:border-slate-900 shadow-sm"
-                                        style={{ backgroundColor: color }}
-                                    />
-                                ))}
+                            {/* Right Side: Preview & Check */}
+                            <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                                {/* Color Preview (Hidden on tiny screens to save space) */}
+                                <div className="hidden xs:flex gap-1 sm:gap-1.5 shrink-0">
+                                    {preview.map((color, idx) => (
+                                        <div 
+                                            key={idx} 
+                                            className="w-3.5 h-3.5 sm:w-5 sm:h-5 rounded-full border-2 border-white dark:border-slate-900 shadow-sm"
+                                            style={{ backgroundColor: color }}
+                                        />
+                                    ))}
+                                </div>
+                                
+                                {/* Check Mark */}
+                                {theme === id ? (
+                                    <motion.div 
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center shrink-0 shadow-sm"
+                                    >
+                                        <Check className="h-3 w-3 text-white stroke-[3]" />
+                                    </motion.div>
+                                ) : (
+                                    <div className="w-5 h-5 rounded-full border-2 border-slate-200 dark:border-slate-700 shrink-0" />
+                                )}
                             </div>
-                            
-                            {/* Check Mark */}
-                            {theme === id && (
-                                <motion.div 
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1 }}
-                                    className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center shrink-0 shadow-sm"
-                                >
-                                    <Check className="h-3 w-3 text-white stroke-[3]" />
-                                </motion.div>
-                            )}
                         </button>
                     ))}
                 </div>
@@ -353,51 +360,60 @@ const Settings = () => {
         <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-5">
 
             {/* Top bar */}
-            <div className="flex items-center justify-between mb-5 pb-4 border-b border-slate-100 dark:border-slate-800">
-                <div>
-                    <h1 className="text-base font-black text-slate-900 dark:text-white tracking-tight">
+            <div className="flex items-center justify-between mb-5 pb-4 border-b border-slate-100 dark:border-slate-800 gap-4">
+                <div className="min-w-0">
+                    <h1 className="text-base font-black text-slate-900 dark:text-white tracking-tight truncate">
                         Settings
                     </h1>
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 truncate">
                         Manage your preferences & app configuration
                     </p>
                 </div>
                 <motion.button whileTap={{ scale: 0.96 }} onClick={handleSave}
-                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${
+                    className={`flex items-center justify-center whitespace-nowrap shrink-0 gap-1.5 px-3 sm:px-3.5 py-2 rounded-lg text-[11px] sm:text-xs font-bold transition-all ${
                         saved
                             ? 'bg-emerald-500 text-white'
                             : 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white'
                     }`}>
                     {saved ? <Check className="h-3 w-3" /> : <Save className="h-3 w-3" />}
-                    {saved ? 'Saved!' : 'Save Changes'}
+                    <span className="hidden xs:inline">{saved ? 'Saved!' : 'Save Changes'}</span>
+                    <span className="xs:hidden">{saved ? 'Saved' : 'Save'}</span>
                 </motion.button>
             </div>
 
             {/* Two-column */}
-            <div className="flex gap-5 items-start">
+            <div className="flex flex-col md:flex-row gap-5 items-start">
 
                 {/* ── Sidebar ── */}
-                <aside className="w-52 shrink-0 sticky top-20 space-y-1">
+                <aside className="w-full md:w-52 shrink-0 md:sticky top-20 flex overflow-x-auto md:flex-col gap-2 md:gap-0 md:space-y-1 pb-2 md:pb-0 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
                     {NAV.map(({ id, label, icon: Icon, desc, accent, activeBg }) => (
                         <button key={id} onClick={() => setActive(id)}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all group ${
+                            className={`flex-shrink-0 md:w-full flex items-center gap-2 md:gap-3 px-3.5 md:px-3 py-2 md:py-2.5 rounded-xl text-left transition-all group ${
                                 active === id
                                     ? `${activeBg} border border-slate-200/60 dark:border-white/5`
-                                    : 'hover:bg-slate-50 dark:hover:bg-slate-800/50 border border-transparent'
+                                    : 'hover:bg-slate-50 dark:hover:bg-slate-800/50 border border-transparent bg-slate-50/50 dark:bg-slate-800/20 md:bg-transparent md:dark:bg-transparent'
                             }`}>
                             <Icon className={`h-3.5 w-3.5 shrink-0 transition-colors ${active === id ? accent : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300'}`} />
-                            <div className="flex-1 min-w-0">
+                            
+                            {/* Desktop text */}
+                            <div className="flex-1 min-w-0 hidden md:block">
                                 <p className={`text-xs font-semibold leading-none transition-colors ${active === id ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200'}`}>
                                     {label}
                                 </p>
                                 <p className="text-[10px] text-slate-400 dark:text-slate-600 mt-0.5 truncate">{desc}</p>
                             </div>
-                            {active === id && <ChevronRight className="h-3 w-3 text-slate-400 shrink-0" />}
+                            
+                            {/* Mobile text */}
+                            <p className={`md:hidden text-xs font-semibold transition-colors ${active === id ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}>
+                                {label}
+                            </p>
+                            
+                            {active === id && <ChevronRight className="hidden md:block h-3 w-3 text-slate-400 shrink-0" />}
                         </button>
                     ))}
 
                     {/* Status card */}
-                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <div className="hidden md:block mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                         <div className="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl">
                             <div className="flex items-center gap-2 mb-2">
                                 <div className="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
@@ -417,7 +433,7 @@ const Settings = () => {
                 </aside>
 
                 {/* ── Content ── */}
-                <main className="flex-1 min-w-0">
+                <main className="flex-1 w-full min-w-0">
                     <AnimatePresence mode="wait">
                         <motion.div key={active}
                             initial={{ opacity: 0, y: 6 }}
