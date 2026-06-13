@@ -6,7 +6,6 @@ import FloatingChatbot from './SharedComponents/FloatingChatbot';
 import ImageUploadForm from './FarmerModule/ImageUploadForm';
 import Profile from './FarmerModule/Profile';
 import WeatherAlerts from './FarmerModule/WeatherAlerts';
-import Settings from './FarmerModule/Settings';
 import HelpSupport from './FarmerModule/HelpSupport';
 import LoginPage from './AuthModule/LoginPage';
 import SignupPage from './AuthModule/SignupPage';
@@ -63,11 +62,6 @@ function AppContent() {
           <Route path="/alerts" element={
             <ProtectedRoute>
               <WeatherAlerts />
-            </ProtectedRoute>
-          } />
-          <Route path="/settings" element={
-            <ProtectedRoute>
-              <Settings />
             </ProtectedRoute>
           } />
           <Route path="/help" element={

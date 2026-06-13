@@ -4,9 +4,9 @@ import { Sprout, LogIn, LayoutDashboard, Menu, X, ChevronDown } from 'lucide-rea
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import { useAuth } from '../Context/AuthContext';
-import { User, LogOut, Settings, HelpCircle, Bell, Wrench, Calendar, Calculator, CloudSun, TrendingUp, FlaskConical, BookOpen, Leaf, Microscope, Bug, MessageSquare, CloudLightning, FileText } from 'lucide-react';
+import { User, LogOut, HelpCircle, Bell, Wrench, Calendar, Calculator, CloudSun, TrendingUp, FlaskConical, BookOpen, Leaf, Microscope, Bug, MessageSquare, CloudLightning, FileText } from 'lucide-react';
 import ThemeSwitcher from './ThemeSwitcher';
-
+import logoImg from '../assets/agriaid-logo.png';
 const Navbar = () => {
     const [isOpen, setIsOpen] = React.useState(false);
     const location = useLocation();
@@ -39,7 +39,7 @@ const Navbar = () => {
                 
                 {/* Logo */}
                 <Link to="/" className="flex items-center gap-2 text-[18px] font-semibold text-gray-900 dark:text-white group select-none">
-                    <Sprout className="h-5 w-5 text-farm-green" />
+                    <img src={logoImg} alt="AgriAid.AI Logo" className="h-6 w-auto object-contain" />
                     <span>AgriAid<span className="text-farm-green">.AI</span></span>
                 </Link>
 
@@ -152,10 +152,6 @@ const Navbar = () => {
                                 <Link to="/profile" className="w-full text-left px-4 py-2 text-[13px] text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors flex items-start gap-2 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white">
                                     <User className="h-[14px] w-[14px] shrink-0 mt-0.5" />
                                     <span className="break-words leading-tight">My Profile</span>
-                                </Link>
-                                <Link to="/settings" className="w-full text-left px-4 py-2 text-[13px] text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors flex items-start gap-2 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white">
-                                    <Settings className="h-[14px] w-[14px] shrink-0 mt-0.5" />
-                                    <span className="break-words leading-tight">Settings</span>
                                 </Link>
                                 <Link to="/help" className="w-full text-left px-4 py-2 text-[13px] text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors flex items-start gap-2 border-b border-gray-50 pb-2 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white dark:border-slate-700/50">
                                     <HelpCircle className="h-[14px] w-[14px] shrink-0 mt-0.5" />
@@ -284,10 +280,6 @@ const Navbar = () => {
                                                 <Link to="/profile" onClick={() => setIsOpen(false)} className="flex items-center space-x-1.5 p-2 rounded-xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-sm active:scale-95 transition-all text-gray-600 dark:text-slate-300">
                                                     <User className="h-3.5 w-3.5 text-emerald-500" />
                                                     <span className="text-[10px] font-semibold">Profile</span>
-                                                </Link>
-                                                <Link to="/settings" onClick={() => setIsOpen(false)} className="flex items-center space-x-1.5 p-2 rounded-xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-sm active:scale-95 transition-all text-gray-600 dark:text-slate-300">
-                                                    <Settings className="h-3.5 w-3.5 text-blue-500" />
-                                                    <span className="text-[10px] font-semibold">Settings</span>
                                                 </Link>
                                                 <Link to="/help" onClick={() => setIsOpen(false)} className="flex items-center space-x-1.5 p-2 rounded-xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-sm active:scale-95 transition-all text-gray-600 dark:text-slate-300">
                                                     <HelpCircle className="h-3.5 w-3.5 text-purple-500" />
