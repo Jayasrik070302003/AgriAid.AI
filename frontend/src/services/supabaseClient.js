@@ -7,6 +7,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
     console.warn('Supabase env vars not set. Auth features will be limited.');
 }
 
-export const supabase = supabaseUrl && supabaseAnonKey
+export const supabase = (supabaseUrl && supabaseUrl.startsWith('http') && supabaseAnonKey)
     ? createClient(supabaseUrl, supabaseAnonKey)
     : null;

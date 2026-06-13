@@ -4,21 +4,25 @@ services:
     runtime: node
     rootDir: backend
     buildCommand: npm install
-    startCommand: npm start
+    startCommand: node server.js
     envVars:
-      - key: PORT
-        value: 3001
-      - key: CLIENT_URL
+      - key: NODE_ENV
+        value: production
+
+  - type: web
+    name: agriaid-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
         sync: false
-      - key: GROQ_API_KEY
+      - key: VITE_SUPABASE_URL
         sync: false
-      - key: GROQ_API_KEY_2
-        sync: false
-      - key: GEMINI_API_KEY
-        sync: false
-      - key: GEMINI_API_KEY_2
-        sync: false
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_ANON_KEY
+      - key: VITE_SUPABASE_ANON_KEY
         sync: false
