@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { API_BASE_URL } from './config';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Navbar from './SharedComponents/Navbar';
@@ -144,6 +145,13 @@ import { Toaster } from 'react-hot-toast';
 import { GlobalStateProvider } from './Context/GlobalStateContext';
 
 function App() {
+  useEffect(() => {
+    const ping = () => fetch(`${API_BASE_URL}/`).catch(() => {});
+    ping();
+    const interval = setInterval(ping, 2 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <LanguageProvider>
       <ThemeProvider>
