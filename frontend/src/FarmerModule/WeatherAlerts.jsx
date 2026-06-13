@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CloudRain, Wind, ThermometerSun, AlertTriangle, Droplets, ArrowLeft, MapPin, RefreshCw, Zap, Clock } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { useLanguage } from '../Context/LanguageContext';
+import { CloudRain, Wind, ThermometerSun, AlertTriangle, Droplets, MapPin, RefreshCw, Zap, Clock } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import useGPS from '../hooks/useGPS';
 import apiClient from '../services/apiClient';
 
 const WeatherAlerts = () => {
-    const { t } = useLanguage();
     const [alerts, setAlerts] = useState([]);
     const [loading, setLoading] = useState(false);
     const [weatherData, setWeatherData] = useState(null);
@@ -140,16 +137,11 @@ const WeatherAlerts = () => {
     return (
         <div className="max-w-4xl mx-auto px-4 py-4">
             <div className="mb-5 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <Link to="/" className="p-2 rounded-lg bg-white shadow-sm hover:bg-gray-50 transition-colors dark:bg-slate-800 dark:hover:bg-slate-700">
-                        <ArrowLeft className="h-4 w-4 text-gray-600 dark:text-slate-300" />
-                    </Link>
-                    <div>
-                        <h1 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2 dark:text-white">
-                            {t('nav_alerts')} <AlertTriangle className="h-5 w-5 text-farm-green" />
-                        </h1>
-                        <p className="text-gray-500 text-[11px] mt-0.5 dark:text-slate-400">{t('alerts_subtitle') || "Real-time weather warnings for your location"}</p>
-                    </div>
+                <div>
+                    <h1 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2 dark:text-white">
+                        Weather Alerts <AlertTriangle className="h-5 w-5 text-farm-green" />
+                    </h1>
+                    <p className="text-gray-500 text-[11px] mt-0.5 dark:text-slate-400">Real-time weather warnings for your location</p>
                 </div>
                 
                 <button
@@ -229,7 +221,7 @@ const WeatherAlerts = () => {
                                     <div className="md:border-l md:border-gray-200/50 md:pl-4 pt-2 md:pt-0 dark:border-slate-600/50">
                                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/60 text-gray-500 shadow-sm border border-white/50 dark:bg-slate-800/60 dark:text-slate-400 dark:border-white/10">
                                             <Clock className="h-3 w-3" />
-                                            {t('alert_active') || "Active"}
+                                            Active
                                         </span>
                                     </div>
                                 </motion.div>
@@ -247,22 +239,7 @@ const WeatherAlerts = () => {
                     )}
                 </AnimatePresence>
 
-                {/* Additional Info Card */}
-                {alerts.length > 0 && (
-                    <motion.div
-                        variants={itemVariants}
-                        className="mt-5 p-5 rounded-2xl bg-gradient-to-br from-farm-green to-emerald-700 text-white text-center shadow-lg shadow-green-500/20"
-                    >
-                        <Droplets className="h-8 w-8 mx-auto mb-3 opacity-80" />
-                        <h2 className="text-base font-bold mb-1.5">{t('alert_subscribe_title') || "Get SMS Alerts"}</h2>
-                        <p className="text-emerald-100 text-[11px] max-w-lg mx-auto mb-4 leading-relaxed">
-                            {t('alert_subscribe_desc') || "Register your mobile number to receive critical weather updates directly via SMS."}
-                        </p>
-                        <button className="px-5 py-2 bg-white text-farm-green rounded-lg text-xs font-bold hover:bg-emerald-50 transition-colors shadow-md">
-                            {t('alert_subscribe_btn') || "Subscribe Now"}
-                        </button>
-                    </motion.div>
-                )}
+
             </motion.div>
         </div>
     );

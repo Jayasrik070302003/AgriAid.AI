@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    HelpCircle, Phone, Mail, ChevronDown, ChevronRight,
+    HelpCircle, ChevronDown, ChevronRight,
     Sprout, Leaf, FlaskConical, CloudSun, TrendingUp,
     Calendar, FileText, BookOpen, Bug, Zap, Search, MessageCircle
 } from 'lucide-react';
@@ -291,34 +291,6 @@ const HelpSupport = () => {
                 </div>
             </div>
 
-            {/* Contact Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <a href="tel:18001234567"
-                    className="flex items-center gap-4 p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-emerald-200 dark:hover:border-emerald-700 transition-all group">
-                    <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl group-hover:scale-110 transition-transform shrink-0">
-                        <Phone className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                    </div>
-                    <div>
-                        <p className="text-sm font-bold text-gray-800 dark:text-white">Call Support</p>
-                        <p className="text-xs text-gray-500 dark:text-slate-400">Mon–Fri, 9AM – 6PM</p>
-                        <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">1800-123-4567</p>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-gray-300 ml-auto shrink-0" />
-                </a>
-
-                <a href="mailto:support@agriaid.ai"
-                    className="flex items-center gap-4 p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-blue-200 dark:hover:border-blue-700 transition-all group">
-                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl group-hover:scale-110 transition-transform shrink-0">
-                        <Mail className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <div>
-                        <p className="text-sm font-bold text-gray-800 dark:text-white">Email Us</p>
-                        <p className="text-xs text-gray-500 dark:text-slate-400">We reply within 24 hours</p>
-                        <p className="text-sm font-bold text-blue-600 dark:text-blue-400 mt-0.5">support@agriaid.ai</p>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-gray-300 ml-auto shrink-0" />
-                </a>
-            </div>
 
             {/* Floating Chatbot Hint */}
             <div className="flex items-center gap-3 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800/30">

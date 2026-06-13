@@ -20,6 +20,7 @@ const Navbar = () => {
         { name: 'Crop Calendar', path: '/tools/crop-calendar', icon: Calendar, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-900/30' },
         { name: 'Government Schemes', path: '/tools/government-schemes', icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/30' },
         { name: 'Organic Guide', path: '/tools/organic-guide', icon: Leaf, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/30' },
+        { name: 'Weather Alerts', path: '/alerts', icon: CloudSun, color: 'text-sky-500', bg: 'bg-sky-50 dark:bg-sky-900/30' },
     ];
 
     const simulators = [
@@ -152,10 +153,6 @@ const Navbar = () => {
                                     <User className="h-[14px] w-[14px] shrink-0 mt-0.5" />
                                     <span className="break-words leading-tight">My Profile</span>
                                 </Link>
-                                <Link to="/alerts" className="w-full text-left px-4 py-2 text-[13px] text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors flex items-start gap-2 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white">
-                                    <Bell className="h-[14px] w-[14px] shrink-0 mt-0.5" />
-                                    <span className="break-words leading-tight">Weather Alerts</span>
-                                </Link>
                                 <Link to="/settings" className="w-full text-left px-4 py-2 text-[13px] text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors flex items-start gap-2 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white">
                                     <Settings className="h-[14px] w-[14px] shrink-0 mt-0.5" />
                                     <span className="break-words leading-tight">Settings</span>
@@ -287,10 +284,6 @@ const Navbar = () => {
                                                 <Link to="/profile" onClick={() => setIsOpen(false)} className="flex items-center space-x-1.5 p-2 rounded-xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-sm active:scale-95 transition-all text-gray-600 dark:text-slate-300">
                                                     <User className="h-3.5 w-3.5 text-emerald-500" />
                                                     <span className="text-[10px] font-semibold">Profile</span>
-                                                </Link>
-                                                <Link to="/alerts" onClick={() => setIsOpen(false)} className="flex items-center space-x-1.5 p-2 rounded-xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-sm active:scale-95 transition-all text-gray-600 dark:text-slate-300">
-                                                    <Bell className="h-3.5 w-3.5 text-amber-500" />
-                                                    <span className="text-[10px] font-semibold">Alerts</span>
                                                 </Link>
                                                 <Link to="/settings" onClick={() => setIsOpen(false)} className="flex items-center space-x-1.5 p-2 rounded-xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-sm active:scale-95 transition-all text-gray-600 dark:text-slate-300">
                                                     <Settings className="h-3.5 w-3.5 text-blue-500" />
