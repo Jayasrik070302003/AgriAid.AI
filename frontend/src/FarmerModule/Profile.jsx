@@ -62,25 +62,41 @@ const Profile = () => {
     }, [user]);
 
     const loadProfile = async () => {
-        if (!supabase || !user?.email) return;
+        if (!user?.email) return;
+
+        // Always load from localStorage first (instant)
+        const cached = localStorage.getItem(`agriaid_profile_${user.email}`);
+        if (cached) {
+            const saved = JSON.parse(cached);
+            setFormData(prev => ({ ...prev, ...saved }));
+            if (saved.avatar) setPreview(saved.avatar);
+        }
+
+        // Then try Supabase to get latest
+        if (!supabase) return;
         try {
-            const { data } = await supabase
+            const { data, error } = await supabase
                 .from('profiles')
-                .select('phone, location, avatar_url')
+                .select('name, phone, location, avatar_url')
                 .eq('email', user.email)
                 .single();
+            if (error) {
+                // Table missing or no row yet — localStorage already loaded above
+                return;
+            }
             if (data) {
-                setFormData(prev => ({
-                    ...prev,
+                const merged = {
+                    name: data.name || user.name || '',
                     phone: data.phone || '',
                     location: data.location || '',
                     avatar: data.avatar_url || null,
-                }));
+                };
+                setFormData(prev => ({ ...prev, ...merged }));
                 if (data.avatar_url) setPreview(data.avatar_url);
+                // Sync back to localStorage
+                localStorage.setItem(`agriaid_profile_${user.email}`, JSON.stringify(merged));
             }
-        } catch (_) {
-            // profiles table may not exist yet — silently ignore
-        }
+        } catch (_) {}
     };
 
     const loadStats = async () => {
@@ -123,16 +139,31 @@ const Profile = () => {
                 const base64 = preview.split(',')[1];
                 const byteArray = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
                 const fileName = `avatar_${user.email}_${Date.now()}.jpg`;
-                const { data: uploadData, error: uploadError } = await supabase.storage
+                const { error: uploadError, data: uploadData } = await supabase.storage
                     .from('crop-images')
                     .upload(fileName, byteArray, { contentType: 'image/jpeg', upsert: true });
                 if (!uploadError) {
                     const { data: { publicUrl } } = supabase.storage.from('crop-images').getPublicUrl(fileName);
                     avatarUrl = publicUrl;
+                } else {
+                    // Storage failed — keep base64 preview in localStorage
+                    avatarUrl = preview;
                 }
+            } else if (preview && preview.startsWith('data:')) {
+                avatarUrl = preview;
             }
 
-            // Upsert profile in Supabase
+            const profileToSave = {
+                name: formData.name,
+                phone: formData.phone,
+                location: formData.location,
+                avatar: avatarUrl,
+            };
+
+            // ✅ Always save to localStorage first (works even without Supabase)
+            localStorage.setItem(`agriaid_profile_${user.email}`, JSON.stringify(profileToSave));
+
+            // Try Supabase upsert
             if (supabase && user?.email) {
                 const { error } = await supabase
                     .from('profiles')
@@ -141,23 +172,25 @@ const Profile = () => {
                         name: formData.name,
                         phone: formData.phone,
                         location: formData.location,
-                        avatar_url: avatarUrl,
+                        avatar_url: typeof avatarUrl === 'string' && avatarUrl.startsWith('http') ? avatarUrl : null,
                         updated_at: new Date().toISOString(),
                     }, { onConflict: 'email' });
-                if (error) throw error;
-            }
+                if (error) {
+                    console.warn('Supabase profiles upsert failed (table may not exist):', error.message);
+                    // Not throwing — localStorage save already succeeded
+                }
 
-            // Also update display name in Supabase Auth
-            if (supabase) {
+                // Update display name in Supabase Auth
                 await supabase.auth.updateUser({ data: { name: formData.name } });
             }
 
-            setFormData(prev => ({ ...prev, avatar: avatarUrl }));
+            setFormData(prev => ({ ...prev, ...profileToSave }));
+            setPreview(avatarUrl);
             setIsEditing(false);
-            toast.success('Profile saved successfully!');
+            toast.success('Profile saved!');
         } catch (err) {
-            console.error(err);
-            toast.error('Failed to save profile. Please try again.');
+            console.error('Save error:', err);
+            toast.error('Failed to save. Please try again.');
         } finally {
             setIsSaving(false);
         }
