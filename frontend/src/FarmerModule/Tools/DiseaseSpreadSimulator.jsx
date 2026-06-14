@@ -8,7 +8,8 @@ import {
 import axios from 'axios';
 import clsx from 'clsx';
 
-const API_BASE_URL = 'http://localhost:3001/api/farmer/spread-risk';
+import { API_BASE_URL as BASE_URL } from '../../config';
+const API_BASE_URL = `${BASE_URL}/api/farmer/spread-risk`;
 
 const cropOptions    = ['Rice', 'Wheat', 'Corn', 'Tomato', 'Potato', 'Cotton', 'Sugarcane'];
 const diseaseOptions = [

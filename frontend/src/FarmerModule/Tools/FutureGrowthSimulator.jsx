@@ -11,7 +11,8 @@ import ReactMarkdown from 'react-markdown';
 import { format } from 'date-fns';
 import clsx from 'clsx';
 
-const API_BASE_URL = 'http://localhost:3001/api/farmer/future-growth';
+import { API_BASE_URL as BASE_URL } from '../../config';
+const API_BASE_URL = `${BASE_URL}/api/farmer/future-growth`;
 
 const cropOptions = ['Rice', 'Wheat', 'Corn', 'Tomato', 'Potato', 'Cotton', 'Sugarcane', 'Tea'];
 const soilOptions = ['Alluvial', 'Red Soil', 'Black Soil', 'Laterite', 'Desert Soil', 'Loamy'];
@@ -510,7 +511,7 @@ const FutureGrowthSimulator = () => {
                                         {/* Thumbnail */}
                                         <div className="aspect-video bg-slate-100 dark:bg-slate-700 overflow-hidden">
                                             <img
-                                                src={`http://localhost:3001/${record.image_path}`}
+                                                src={`${BASE_URL}/${record.image_path}`}
                                                 alt="Crop"
                                                 className="w-full h-full object-cover"
                                                 onError={(e) => { e.target.style.display = 'none'; }}
