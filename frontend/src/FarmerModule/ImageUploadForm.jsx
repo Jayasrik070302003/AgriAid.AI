@@ -344,55 +344,9 @@ const ImageUploadForm = () => {
                     console.warn("OSM Nominatim failed, trying fallback BigDataCloud:", err);
                     setIsLocating(false);
                     
-                    // 3. Fallback: BigDataCloud Geocoding
-                    try {
-                        const bdcUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`;
-                        const res = await fetch(bdcUrl);
-                        const data = await res.json();
-                        
-                        if (data) {
-                            const detectedCountry = data.countryName || "India";
-                            const detectedState = data.principalSubdivision || "";
-                            
-                            let foundDistrict = "";
-                            let foundTaluk = "";
-                            if (data.localityInfo && data.localityInfo.administrative) {
-                                const admins = data.localityInfo.administrative;
-                                const districtObj = admins.find(a => a.adminLevel === 6 || a.name.toLowerCase().includes('district') || a.description.toLowerCase().includes('district'));
-                                const talukObj = admins.find(a => a.adminLevel === 7 || a.name.toLowerCase().includes('taluk') || a.name.toLowerCase().includes('tehsil'));
-                                if (districtObj) foundDistrict = districtObj.name.replace(" District", "");
-                                if (talukObj) foundTaluk = talukObj.name.replace(" Taluk", "").replace(" Tehsil", "");
-                            }
-
-                            setCountry(detectedCountry);
-                            setState(detectedState);
-                            setDistrict(foundDistrict || data.locality || "");
-                            setTaluk(foundTaluk || "");
-                            setVillage(data.locality || "Farming Village");
-                            setPincode(data.postcode || "");
-                            setIsLocationLocked(true);
-
-                            if (!data.principalSubdivision) {
-                                setLocationConfidenceLow(true);
-                            }
-
-                            fetchAISoilProfile({
-                                state: detectedState,
-                                district: foundDistrict || data.locality || "",
-                                country: detectedCountry,
-                                taluk: foundTaluk,
-                                village: data.locality || "Farming Village",
-                                latitude: lat.toString(),
-                                longitude: lon.toString(),
-                                pincode: data.postcode || "",
-                                elevation: resolvedElevation
-                            });
-                            setIsLocating(false);
-                            return;
-                        }
-                    } catch (bdcErr) {
-                        console.warn("BigDataCloud failed:", bdcErr);
-                    }
+                    // Nominatim failed — set coords only, show manual edit
+                    setLocationConfidenceLow(true);
+                    setIsLocating(false);
                 }
 
                 setLocationConfidenceLow(true);
@@ -402,111 +356,32 @@ const ImageUploadForm = () => {
                 console.warn("GPS lookup failed:", err);
                 fallbackIPLocation();
             },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
         );
     };
 
-    const fallbackIPLocation = async () => {
-        try {
-            const res = await fetch('http://ipwho.is/');
-            const data = await res.json();
-            
-            if (data && data.success) {
-                const lat = data.latitude;
-                const lon = data.longitude;
-                setLatitude(lat.toString());
-                setLongitude(lon.toString());
-                setPincode(data.postal || "");
-                setCountry(data.country || "India");
-                setState(data.region || "Tamil Nadu");
-                fetchLiveWeather(lat, lon);
-
-                // Reverse geocode IP-derived coordinates for precise village / district details
-                try {
-                    const osmUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
-                    const osmRes = await fetch(osmUrl, {
-                        headers: {
-                            'Accept': 'application/json',
-                            'User-Agent': 'AgriAid.AI-Precision-Agriculture'
-                        }
-                    });
-                    const osmData = await osmRes.json();
-                    if (osmData && osmData.address) {
-                        const addr = osmData.address;
-                        const detectedDistrict = addr.state_district || addr.district || addr.county || addr.city_district || addr.municipality || addr.city || "";
-                        const detectedTaluk = addr.subdistrict || addr.suburb || addr.county || "";
-                        const detectedVillage = addr.village || addr.town || addr.suburb || addr.city || addr.neighbourhood || addr.hamlet || addr.road || "";
-
-                        setDistrict(detectedDistrict.replace(" District", "").replace(" Division", ""));
-                        setTaluk(detectedTaluk.replace(" Taluk", "").replace(" Sub-district", "").replace(" Tehsil", ""));
-                        setVillage(detectedVillage || addr.road || "Farming Locality");
-                        setIsLocationLocked(true);
-
-                        fetchAISoilProfile({
-                            state: data.region || "Tamil Nadu",
-                            district: detectedDistrict.replace(" District", ""),
-                            country: data.country || "India",
-                            taluk: detectedTaluk.replace(" Taluk", ""),
-                            village: detectedVillage || "Farming Locality",
-                            latitude: lat.toString(),
-                            longitude: lon.toString(),
-                            pincode: data.postal || "",
-                            elevation: elevation
-                        });
-                        return;
-                    }
-                } catch (e) {
-                    console.warn("Nominatim geocoding on fallback coordinates failed:", e);
-                }
-
-                setDistrict(data.city || "Viluppuram");
-                setTaluk("Tindivanam");
-                setVillage("Avarapakkam");
-                setIsLocationLocked(true);
-
-                fetchAISoilProfile({
-                    state: data.region || "Tamil Nadu",
-                    district: data.city || "Viluppuram",
-                    country: data.country || "India",
-                    taluk: "Tindivanam",
-                    village: "Avarapakkam",
-                    latitude: lat.toString(),
-                    longitude: lon.toString(),
-                    pincode: data.postal || "",
-                    elevation: elevation
-                });
-            } else {
-                throw new Error("ipwho.is unsuccessful");
-            }
-        } catch (e) {
-            console.warn("Fallback IP geolocator failed:", e);
-            // Secure fallback coordinates pointing to Madurai
-            setCountry("India");
-            setState("Tamil Nadu");
-            setDistrict("Madurai");
-            setTaluk("Madurai North");
-            setVillage("Athikulam");
-            setLatitude("9.953487");
-            setLongitude("78.156281");
-            setPincode("625020");
-            setElevation("101");
-            setIsLocationLocked(true);
-            setLocationConfidenceLow(true);
-
-            fetchAISoilProfile({
-                state: "Tamil Nadu",
-                district: "Madurai",
-                country: "India",
-                taluk: "Madurai North",
-                village: "Athikulam",
-                latitude: "9.953487",
-                longitude: "78.156281",
-                pincode: "625020",
-                elevation: "101"
-            });
-        } finally {
-            setIsLocating(false);
-        }
+    // GPS denied — no IP fallback, use hardcoded default + show manual edit prompt
+    const fallbackIPLocation = () => {
+        console.warn('[GPS] Permission denied — using default Tamil Nadu coords');
+        setCountry("India");
+        setState("Tamil Nadu");
+        setDistrict("Viluppuram");
+        setTaluk("Tindivanam");
+        setVillage("Avarapakkam");
+        setLatitude("11.940");
+        setLongitude("79.486");
+        setPincode("604001");
+        setElevation("42");
+        setIsLocationLocked(false);
+        setLocationConfidenceLow(true);
+        fetchLiveWeather(11.940, 79.486);
+        fetchAISoilProfile({
+            state: "Tamil Nadu", district: "Viluppuram", country: "India",
+            taluk: "Tindivanam", village: "Avarapakkam",
+            latitude: "11.940", longitude: "79.486",
+            pincode: "604001", elevation: "42"
+        });
+        setIsLocating(false);
     };
 
     // Debounced AI search — fires only after 2s pause, Enter, or blur

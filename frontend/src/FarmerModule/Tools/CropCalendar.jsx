@@ -103,7 +103,7 @@ export default function CropCalendar() {
                 state: formData.state,
                 district: formData.district,
                 latitude: location.lat,
-                longitude: location.lng,
+                longitude: location.lon,
                 language: language === 'TA' ? 'Tamil' : language === 'HI' ? 'Hindi' : 'English'
             };
 
