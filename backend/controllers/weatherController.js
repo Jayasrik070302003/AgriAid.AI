@@ -1,6 +1,6 @@
 const logger = require('../utils/logger');
 const { geminiWeatherAdvisory } = require('../services/geminiAdvisor');
-const { getWeatherByCoords } = require('../services/weatherService');
+const { getWeatherByCoords } = require('../services/weatherEngine');
 const axios = require('axios');
 
 // ── Strip "District" suffix ──────────────────────────────────────────────────
