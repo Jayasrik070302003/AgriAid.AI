@@ -143,6 +143,7 @@ import { AuthProvider } from './Context/AuthContext';
 import { ThemeProvider } from './Context/ThemeContext';
 import { Toaster } from 'react-hot-toast';
 import { GlobalStateProvider } from './Context/GlobalStateContext';
+import { LocationProvider } from './Context/LocationContext';
 
 function App() {
   useEffect(() => {
@@ -156,6 +157,7 @@ function App() {
     <LanguageProvider>
       <ThemeProvider>
         <AuthProvider>
+          <LocationProvider>
           <GlobalStateProvider>
             <AppContent />
             <Toaster
@@ -187,6 +189,7 @@ function App() {
               }}
             />
           </GlobalStateProvider>
+          </LocationProvider>
         </AuthProvider>
       </ThemeProvider>
     </LanguageProvider>

@@ -1,11 +1,28 @@
 const logger = require('../utils/logger');
 const { geminiWeatherAdvisory } = require('../services/geminiAdvisor');
+const { getWeatherByCoords } = require('../services/weatherService');
 const axios = require('axios');
 
 // ── Strip "District" suffix ──────────────────────────────────────────────────
 function cleanDistrict(raw = '') {
     return raw.replace(/\s*district\s*/gi, '').trim();
 }
+
+// ── GET /api/farmer/weather/by-coords?lat=&lon= ───────────────────────────────
+// ALWAYS coordinate-based. Never city name. Never IP.
+exports.getWeather = async (req, res) => {
+    try {
+        const { lat, lon } = req.query;
+        if (!lat || !lon) return res.status(400).json({ success: false, message: 'lat and lon required' });
+        console.log('[WEATHER] Fetch Started', { lat, lon });
+        const weather = await getWeatherByCoords(parseFloat(lat), parseFloat(lon));
+        console.log('[WEATHER] Success', { temp: weather.temp, condition: weather.condition });
+        res.json({ success: true, data: weather });
+    } catch (error) {
+        console.error('[WEATHER] Failed:', error.message);
+        res.status(500).json({ success: false, message: 'Failed to fetch weather.' });
+    }
+};
 
 // ── Reverse Geocode via Nominatim (free, no API key) ─────────────────────────
 exports.reverseGeocode = async (req, res) => {

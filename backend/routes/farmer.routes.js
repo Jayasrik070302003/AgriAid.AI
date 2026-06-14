@@ -44,6 +44,7 @@ router.post('/autocomplete-crop', cropCalendarController.autocompleteCrop);
 router.post('/crop-schedule', cropCalendarController.generateCropSchedule);
 
 // Weather Advisory
+router.get('/weather/by-coords', weatherController.getWeather);
 router.post('/weather/refine', weatherController.refineWeather);
 router.get('/reverse-geocode', weatherController.reverseGeocode);
 
