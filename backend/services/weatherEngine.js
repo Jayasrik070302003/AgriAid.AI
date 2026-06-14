@@ -1,51 +1,58 @@
 const axios = require('axios');
 
-// Open-Meteo — 100% FREE, no API key, no credit card
-const GEO_URL     = 'https://geocoding-api.open-meteo.com/v1/search';
-const WEATHER_URL = 'https://api.open-meteo.com/v1/forecast';
-
-const WMO_CONDITIONS = {
-    0: 'Clear Sky', 1: 'Mainly Clear', 2: 'Partly Cloudy', 3: 'Overcast',
-    45: 'Foggy', 48: 'Icy Fog',
-    51: 'Light Drizzle', 53: 'Drizzle', 55: 'Heavy Drizzle',
-    61: 'Light Rain', 63: 'Rain', 65: 'Heavy Rain',
-    80: 'Showers', 81: 'Heavy Showers', 82: 'Violent Showers',
-    95: 'Thunderstorm', 96: 'Thunderstorm with Hail', 99: 'Heavy Thunderstorm'
-};
+const OWM_URL = 'https://api.openweathermap.org/data/2.5/weather';
+const OWM_FORECAST_URL = 'https://api.openweathermap.org/data/2.5/forecast';
+const GEO_URL = 'https://geocoding-api.open-meteo.com/v1/search';
 
 async function getWeatherByCoords(lat, lon) {
-    const res = await axios.get(WEATHER_URL, {
-        params: {
-            latitude: lat, longitude: lon,
-            current: 'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,precipitation,surface_pressure',
-            daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,uv_index_max',
-            timezone: 'auto',
-            forecast_days: 7
-        },
-        timeout: 15000
-    });
+    const API_KEY = process.env.OPENWEATHER_API_KEY;
+    if (!API_KEY) throw new Error('OPENWEATHER_API_KEY not set');
 
-    const c = res.data.current;
-    const d = res.data.daily;
+    const [currentRes, forecastRes] = await Promise.all([
+        axios.get(OWM_URL, {
+            params: { lat, lon, appid: API_KEY, units: 'metric' },
+            timeout: 15000
+        }),
+        axios.get(OWM_FORECAST_URL, {
+            params: { lat, lon, appid: API_KEY, units: 'metric', cnt: 40 },
+            timeout: 15000
+        })
+    ]);
+
+    const c = currentRes.data;
+    const daily = buildDailyForecast(forecastRes.data.list);
 
     return {
-        temp: c.temperature_2m,
-        feelsLike: c.apparent_temperature,
-        humidity: c.relative_humidity_2m,
-        wind: c.wind_speed_10m,
-        condition: WMO_CONDITIONS[c.weather_code] || 'Unknown',
-        weatherCode: c.weather_code,
-        pressure: c.surface_pressure,
-        precipitation: c.precipitation,
-        daily: d.time.map((date, i) => ({
-            date,
-            condition: WMO_CONDITIONS[d.weather_code[i]] || 'Unknown',
-            tempMax: d.temperature_2m_max[i],
-            tempMin: d.temperature_2m_min[i],
-            precipitation: d.precipitation_sum[i],
-            uvIndex: d.uv_index_max[i]
-        }))
+        temp: c.main.temp,
+        feelsLike: c.main.feels_like,
+        humidity: c.main.humidity,
+        wind: c.wind.speed,
+        condition: c.weather[0].description,
+        weatherCode: c.weather[0].id,
+        pressure: c.main.pressure,
+        precipitation: c.rain?.['1h'] || 0,
+        daily
     };
+}
+
+function buildDailyForecast(list) {
+    const map = {};
+    for (const item of list) {
+        const date = item.dt_txt.split(' ')[0];
+        if (!map[date]) {
+            map[date] = { date, temps: [], precip: 0, condition: item.weather[0].description, code: item.weather[0].id };
+        }
+        map[date].temps.push(item.main.temp);
+        map[date].precip += item.rain?.['3h'] || 0;
+    }
+    return Object.values(map).slice(0, 7).map(d => ({
+        date: d.date,
+        condition: d.condition,
+        tempMax: Math.max(...d.temps),
+        tempMin: Math.min(...d.temps),
+        precipitation: parseFloat(d.precip.toFixed(1)),
+        uvIndex: null
+    }));
 }
 
 async function getWeatherByCity(city) {

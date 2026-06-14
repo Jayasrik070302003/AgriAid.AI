@@ -6,8 +6,8 @@ import { toast } from 'react-hot-toast';
 import useGPS from '../../hooks/useGPS';
 import { useLanguage } from '../../Context/LanguageContext';
 
-const API_BASE_URL = 'http://localhost:3001/api/farmer';
-const apiClient = axios.create({ baseURL: API_BASE_URL, timeout: 60000 });
+import { API_BASE_URL as BASE_URL } from '../../config';
+const apiClient = axios.create({ baseURL: `${BASE_URL}/api/farmer`, timeout: 60000 });
 
 // Hook to debounce search
 function useDebounce(value, delay) {
