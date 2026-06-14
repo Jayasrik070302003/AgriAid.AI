@@ -276,13 +276,15 @@ const ImageUploadForm = () => {
                 setLatitude(lat.toFixed(6));
                 setLongitude(lon.toFixed(6));
                 fetchLiveWeather(lat, lon);
+                let resolvedElevation = elevation;
 
                 // 1. Fetch Elevation from Open-Meteo API
                 try {
                     const elRes = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`);
                     const elData = await elRes.json();
                     if (elData && elData.elevation && elData.elevation[0] !== undefined) {
-                        setElevation(Math.round(elData.elevation[0]).toString());
+                        resolvedElevation = Math.round(elData.elevation[0]).toString();
+                        setElevation(resolvedElevation);
                     }
                 } catch (e) {
                     console.warn("Elevation fetch failed:", e);
@@ -330,15 +332,17 @@ const ImageUploadForm = () => {
                             latitude: lat.toString(),
                             longitude: lon.toString(),
                             pincode: detectedPostcode,
-                            elevation: elevation
+                            elevation: resolvedElevation
                         });
 
                         toast.success(`📍 Located: ${detectedVillage || 'Micro-region'}, ${detectedDistrict}`);
+                        setIsLocating(false);
                         return;
                     }
                     throw new Error("OSM address empty");
                 } catch (err) {
                     console.warn("OSM Nominatim failed, trying fallback BigDataCloud:", err);
+                    setIsLocating(false);
                     
                     // 3. Fallback: BigDataCloud Geocoding
                     try {
@@ -381,8 +385,9 @@ const ImageUploadForm = () => {
                                 latitude: lat.toString(),
                                 longitude: lon.toString(),
                                 pincode: data.postcode || "",
-                                elevation: elevation
+                                elevation: resolvedElevation
                             });
+                            setIsLocating(false);
                             return;
                         }
                     } catch (bdcErr) {
@@ -391,14 +396,14 @@ const ImageUploadForm = () => {
                 }
 
                 setLocationConfidenceLow(true);
+                setIsLocating(false);
             },
             (err) => {
                 console.warn("GPS lookup failed:", err);
                 fallbackIPLocation();
             },
-            { enableHighAccuracy: true, timeout: 8000 }
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
         );
-        // NOTE: do NOT call setIsLocating(false) here — the async callback handles it
     };
 
     const fallbackIPLocation = async () => {
