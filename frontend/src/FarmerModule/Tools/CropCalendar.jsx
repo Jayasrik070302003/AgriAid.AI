@@ -1,140 +1,186 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, MapPin, Calendar, CheckCircle2, ChevronRight, Droplets, Thermometer, Leaf, Zap, AlertTriangle, TrendingUp, DollarSign, Sprout, CloudRain, Wind, Droplets as WaterDrop, Bug } from 'lucide-react';
+import {
+    Search, MapPin, Calendar, ChevronRight, Droplets, Leaf, Zap,
+    AlertTriangle, TrendingUp, DollarSign, Sprout, CloudRain,
+    Droplets as WaterDrop, Bug, ChevronDown, Landmark
+} from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import useGPS from '../../hooks/useGPS';
 import { useLanguage } from '../../Context/LanguageContext';
-
+import { LAND_HIERARCHY } from '../../services/landData';
 import { API_BASE_URL as BASE_URL } from '../../config';
+
 const apiClient = axios.create({ baseURL: `${BASE_URL}/api/farmer`, timeout: 60000 });
 
-// Hook to debounce search
 function useDebounce(value, delay) {
-    const [debouncedValue, setDebouncedValue] = useState(value);
+    const [deb, setDeb] = useState(value);
     useEffect(() => {
-        const handler = setTimeout(() => setDebouncedValue(value), delay);
-        return () => clearTimeout(handler);
+        const h = setTimeout(() => setDeb(value), delay);
+        return () => clearTimeout(h);
     }, [value, delay]);
-    return debouncedValue;
+    return deb;
 }
 
+// ── Patta/Chitta location selector (same pattern as ImageUploadForm) ──────────
+const LocationSelector = ({ onChange }) => {
+    const states = Object.keys(LAND_HIERARCHY);
+    const [selState,    setSelState]    = useState('Tamil Nadu');
+    const [selDistrict, setSelDistrict] = useState('');
+    const [selTaluk,    setSelTaluk]    = useState('');
+
+    const districts = selState    ? Object.keys(LAND_HIERARCHY[selState] || {})                            : [];
+    const taluks    = selDistrict ? Object.keys((LAND_HIERARCHY[selState] || {})[selDistrict] || {})       : [];
+
+    const emit = (s, d, t) => onChange({ state: s, district: d, taluk: t });
+
+    const onState = (v)    => { setSelState(v);    setSelDistrict(''); setSelTaluk(''); emit(v,  '',  ''); };
+    const onDistrict = (v) => { setSelDistrict(v); setSelTaluk('');    emit(selState, v,  ''); };
+    const onTaluk = (v)    => { setSelTaluk(v);    emit(selState, selDistrict, v); };
+
+    const sel = (value, onChange, options, placeholder, disabled) => (
+        <div className="relative">
+            <select
+                value={value}
+                onChange={e => onChange(e.target.value)}
+                disabled={disabled}
+                className={[
+                    'w-full appearance-none dark:bg-black/40 bg-slate-50',
+                    'dark:border-white/10 border-slate-200 border rounded-lg py-2.5 pl-3 pr-8',
+                    'dark:text-white text-slate-900 focus:outline-none focus:border-indigo-500 text-xs',
+                    'transition-colors',
+                    disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
+                ].join(' ')}
+            >
+                <option value="">{placeholder}</option>
+                {options.map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 dark:text-slate-500 text-slate-400 pointer-events-none" />
+        </div>
+    );
+
+    return (
+        <div className="space-y-1.5">
+            {/* Label row */}
+            <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold dark:text-slate-400 text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                    <Landmark className="w-3 h-3" /> Location
+                </label>
+                {/* Breadcrumb */}
+                <div className="flex items-center gap-0.5 text-[9px] font-bold text-slate-400">
+                    {[selState, selDistrict, selTaluk].filter(Boolean).map((v, i, arr) => (
+                        <React.Fragment key={v}>
+                            <span className="text-indigo-400 truncate max-w-[60px]">{v.replace(' Taluk','').replace(' District','')}</span>
+                            {i < arr.length - 1 && <ChevronRight className="w-2.5 h-2.5 shrink-0" />}
+                        </React.Fragment>
+                    ))}
+                </div>
+            </div>
+
+            {/* State */}
+            {sel(selState, onState, states, 'Select State', false)}
+
+            {/* District + Taluk side by side on sm+ */}
+            <div className="grid grid-cols-2 gap-2">
+                {sel(selDistrict, onDistrict, districts, 'District', !selState)}
+                {sel(selTaluk,    onTaluk,    taluks,    'Taluk',    !selDistrict)}
+            </div>
+
+            {selState && selDistrict && (
+                <div className="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-2.5 py-1.5">
+                    <MapPin className="w-3 h-3 shrink-0" />
+                    <span className="truncate">{selDistrict}{selTaluk ? ` · ${selTaluk.replace(' Taluk','')}` : ''}, {selState}</span>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ── Risk colour ───────────────────────────────────────────────────────────────
+const getRiskColor = (risk) => {
+    const r = (risk || '').toLowerCase();
+    if (r.includes('high') || r.includes('hard'))       return 'text-rose-500 bg-rose-500/10 border-rose-500/20';
+    if (r.includes('medium') || r.includes('moderate')) return 'text-amber-500 bg-amber-500/10 border-amber-500/20';
+    return 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20';
+};
+
+// ── Main ──────────────────────────────────────────────────────────────────────
 export default function CropCalendar() {
     const { t, language } = useLanguage();
-    const { location, detect, loading: gpsLoading } = useGPS();
 
-    // Form states
-    const [cropInput, setCropInput] = useState('');
+    const [cropInput,    setCropInput]    = useState('');
     const [selectedCrop, setSelectedCrop] = useState('');
-    const debouncedCropQuery = useDebounce(cropInput, 800);
-    const [suggestions, setSuggestions] = useState([]);
-    const [showSuggestions, setShowSuggestions] = useState(false);
-    const [isAutocompleteLoading, setIsAutocompleteLoading] = useState(false);
+    const debouncedCrop  = useDebounce(cropInput, 800);
+
+    const [suggestions,          setSuggestions]          = useState([]);
+    const [showSuggestions,      setShowSuggestions]      = useState(false);
+    const [isAutocompleteLoading,setIsAutocompleteLoading]= useState(false);
 
     const [sowingDate, setSowingDate] = useState(new Date().toISOString().split('T')[0]);
-    const [formData, setFormData] = useState({ state: '', district: '' });
-    
-    // Core states
+
+    // location comes from cascading dropdown — never GPS
+    const [location, setLocation] = useState({ state: 'Tamil Nadu', district: '', taluk: '' });
+
     const [isGenerating, setIsGenerating] = useState(false);
     const [calendarData, setCalendarData] = useState(null);
 
-    // AI Autocomplete effect
+    // AI autocomplete
     useEffect(() => {
-        const fetchAutocomplete = async () => {
-            if (!debouncedCropQuery || debouncedCropQuery.length < 2 || debouncedCropQuery === selectedCrop) {
-                setSuggestions([]);
-                return;
+        const run = async () => {
+            if (!debouncedCrop || debouncedCrop.length < 2 || debouncedCrop === selectedCrop) {
+                setSuggestions([]); return;
             }
             setIsAutocompleteLoading(true);
             try {
-                const res = await apiClient.post('/autocomplete-crop', { 
-                    query: debouncedCropQuery,
+                const res = await apiClient.post('/autocomplete-crop', {
+                    query: debouncedCrop,
                     language: language === 'TA' ? 'Tamil' : language === 'HI' ? 'Hindi' : 'English'
                 });
                 if (res.data.success && res.data.suggestions) {
                     setSuggestions(res.data.suggestions);
                     setShowSuggestions(true);
                 }
-            } catch (err) {
-                console.error("Autocomplete error", err);
-            } finally {
-                setIsAutocompleteLoading(false);
-            }
+            } catch { /* silent */ } finally { setIsAutocompleteLoading(false); }
         };
-        fetchAutocomplete();
-    }, [debouncedCropQuery, language, selectedCrop]);
-
-    // Auto-Location on load
-    useEffect(() => {
-        // Automatically attempt to find location on mount
-        detect();
-    }, []); // eslint-disable-line
-
-    // Sync GPS to form
-    useEffect(() => {
-        if (location.state && location.district) {
-            setFormData({ state: location.state, district: location.district });
-        }
-    }, [location]);
-
-    const handleSelectCrop = (cropName) => {
-        setCropInput(cropName);
-        setSelectedCrop(cropName);
-        setShowSuggestions(false);
-    };
+        run();
+    }, [debouncedCrop, language, selectedCrop]);
 
     const handleGenerate = async () => {
-        if (!selectedCrop && !cropInput) {
-            toast.error(t('cal_step1_desc') || "Please select or type a crop");
-            return;
-        }
-        if (!sowingDate || !formData.state) {
-            toast.error(t('cal_step1_desc') || "Please fill all required fields");
-            return;
-        }
+        if (!selectedCrop && !cropInput)    { toast.error('Please select or type a crop'); return; }
+        if (!location.state || !location.district) { toast.error('Please select your State and District'); return; }
 
-        const finalCrop = selectedCrop || cropInput;
         setIsGenerating(true);
         setCalendarData(null);
         try {
-            const payload = {
-                crop: finalCrop,
+            const res = await apiClient.post('/crop-schedule', {
+                crop:        selectedCrop || cropInput,
                 sowing_date: sowingDate,
-                state: formData.state,
-                district: formData.district,
-                latitude: location.lat,
-                longitude: location.lon,
-                language: language === 'TA' ? 'Tamil' : language === 'HI' ? 'Hindi' : 'English'
-            };
-
-            const response = await apiClient.post('/crop-schedule', payload);
-            
-            if (response.data.success) {
-                setCalendarData(response.data.data);
-                toast.success(t('cal_generating') ? "Success" : "Calendar Generated Successfully!");
+                state:       location.state,
+                district:    location.district,
+                taluk:       location.taluk,
+                language:    language === 'TA' ? 'Tamil' : language === 'HI' ? 'Hindi' : 'English'
+            });
+            if (res.data.success) {
+                setCalendarData(res.data.data);
+                toast.success('Calendar Generated!');
             } else {
-                throw new Error(response.data.message);
+                throw new Error(res.data.message);
             }
-        } catch (error) {
-            console.error(error);
-            toast.error("Failed to generate calendar. Please try again.");
+        } catch {
+            toast.error('Failed to generate calendar. Please try again.');
         } finally {
             setIsGenerating(false);
         }
     };
 
-    const getRiskColor = (risk) => {
-        const r = risk?.toLowerCase() || '';
-        if (r.includes('high') || r.includes('hard')) return 'text-rose-500 bg-rose-500/10 border-rose-500/20';
-        if (r.includes('medium') || r.includes('moderate')) return 'text-amber-500 bg-amber-500/10 border-amber-500/20';
-        return 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20';
-    };
+    const canGenerate = (selectedCrop || cropInput) && location.state && location.district;
 
     return (
-        <div className="min-h-screen dark:bg-[#050B14] bg-slate-50 py-6 px-4 sm:px-6 font-sans pb-24 sm:pb-6">
+        <div className="min-h-screen dark:bg-[#050B14] bg-slate-50 py-4 px-3 sm:px-6 font-sans pb-24 sm:pb-6">
             <div className="max-w-[1600px] mx-auto space-y-4">
-                {/* Header — left-aligned title, right-aligned subtitle */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4 pb-3 border-b border-white/5 dark:border-white/5 border-slate-200">
+
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b dark:border-white/5 border-slate-200">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-indigo-500/10 rounded-xl">
                             <Calendar className="w-4 h-4 text-indigo-400" />
@@ -145,22 +191,21 @@ export default function CropCalendar() {
                                     {t('cal_title') || 'Crop Calendar'}
                                 </h1>
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[9px] font-bold uppercase tracking-widest">
-                                    <Zap className="w-2.5 h-2.5" />
-                                    {t('cal_badge') || 'AI'}
+                                    <Zap className="w-2.5 h-2.5" /> AI
                                 </span>
                             </div>
                         </div>
                     </div>
-                    <p className="text-xs dark:text-slate-400 text-slate-500 max-w-sm text-right hidden sm:block">
-                        {t('cal_subtitle') || 'AI-powered lifecycle planner with real-time weather, soil & market intelligence.'}
+                    <p className="text-xs dark:text-slate-400 text-slate-500 max-w-sm hidden sm:block text-right">
+                        {t('cal_subtitle') || 'AI-powered lifecycle planner with soil & market intelligence.'}
                     </p>
                 </div>
 
                 <div className="grid grid-cols-1 xl:grid-cols-[300px_1fr] gap-4">
-                    {/* Left Pane: Configuration */}
-                    <motion.div 
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
+
+                    {/* ── Left pane ── */}
+                    <motion.div
+                        initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
                         className="dark:bg-[#0A1525] bg-white border dark:border-white/5 border-slate-200 rounded-2xl p-4 flex flex-col gap-3 xl:sticky xl:top-20 h-fit shadow-lg"
                     >
                         <h2 className="text-sm font-bold dark:text-white text-slate-800 flex items-center gap-1.5">
@@ -168,20 +213,21 @@ export default function CropCalendar() {
                             {t('timeline_parameters') || 'Cultivation Details'}
                         </h2>
 
-                        {/* AI Autocomplete Input */}
+                        {/* Crop search */}
                         <div className="space-y-1 relative">
-                            <label className="text-[10px] font-bold dark:text-slate-400 text-slate-500 uppercase tracking-wider">{t('cal_search_label') || 'Search Crop'}</label>
+                            <label className="text-[10px] font-bold dark:text-slate-400 text-slate-500 uppercase tracking-wider">
+                                {t('cal_search_label') || 'Search Crop'}
+                            </label>
                             <div className="relative">
-                                {isAutocompleteLoading ? (
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-slate-300/30 border-t-indigo-500 rounded-full animate-spin" />
-                                ) : (
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 dark:text-slate-500 text-slate-400" />
-                                )}
+                                {isAutocompleteLoading
+                                    ? <div className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-slate-300/30 border-t-indigo-500 rounded-full animate-spin" />
+                                    : <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 dark:text-slate-500 text-slate-400" />
+                                }
                                 <input
                                     type="text"
                                     value={cropInput}
-                                    onChange={(e) => { setCropInput(e.target.value); setSelectedCrop(''); }}
-                                    onFocus={() => { if(suggestions.length) setShowSuggestions(true); }}
+                                    onChange={e => { setCropInput(e.target.value); setSelectedCrop(''); }}
+                                    onFocus={() => { if (suggestions.length) setShowSuggestions(true); }}
                                     onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                                     placeholder={t('cal_search_placeholder') || 'e.g. Groundnut, thakali...'}
                                     className="w-full dark:bg-black/40 bg-slate-50 dark:border-white/10 border-slate-200 border rounded-lg py-2.5 pl-9 pr-3 dark:text-white text-slate-900 focus:outline-none focus:border-indigo-500 transition-colors dark:placeholder:text-slate-600 placeholder:text-slate-400 text-xs"
@@ -189,18 +235,15 @@ export default function CropCalendar() {
                             </div>
                             <AnimatePresence>
                                 {showSuggestions && suggestions.length > 0 && (
-                                    <motion.div 
+                                    <motion.div
                                         initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
                                         className="absolute top-full left-0 right-0 mt-1 dark:bg-[#0A1525] bg-white dark:border-indigo-500/30 border-indigo-300 border rounded-lg overflow-hidden shadow-xl z-50"
                                     >
                                         <div className="text-[9px] uppercase font-bold text-indigo-400 px-3 py-1.5 bg-indigo-500/10">AI Suggestions</div>
-                                        {suggestions.map((sug, idx) => (
-                                            <button 
-                                                key={idx}
-                                                onClick={() => handleSelectCrop(sug)}
-                                                className="w-full text-left px-3 py-2 dark:text-white text-slate-700 text-xs hover:bg-indigo-500/10 transition-colors flex items-center justify-between"
-                                            >
-                                                <span>{sug}</span>
+                                        {suggestions.map((s, i) => (
+                                            <button key={i} onClick={() => { setCropInput(s); setSelectedCrop(s); setShowSuggestions(false); }}
+                                                className="w-full text-left px-3 py-2 dark:text-white text-slate-700 text-xs hover:bg-indigo-500/10 transition-colors flex items-center justify-between">
+                                                <span>{s}</span>
                                                 <Zap className="w-2.5 h-2.5 text-indigo-500" />
                                             </button>
                                         ))}
@@ -209,50 +252,29 @@ export default function CropCalendar() {
                             </AnimatePresence>
                         </div>
 
-                        {/* Date Input */}
+                        {/* Sowing date */}
                         <div className="space-y-1">
-                            <label className="text-[10px] font-bold dark:text-slate-400 text-slate-500 uppercase tracking-wider">{t('cal_date_label') || 'Sowing Date'}</label>
+                            <label className="text-[10px] font-bold dark:text-slate-400 text-slate-500 uppercase tracking-wider">
+                                {t('cal_date_label') || 'Sowing Date'}
+                            </label>
                             <div className="relative">
                                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 dark:text-slate-500 text-slate-400" />
                                 <input
                                     type="date"
                                     value={sowingDate}
-                                    onChange={(e) => setSowingDate(e.target.value)}
+                                    onChange={e => setSowingDate(e.target.value)}
                                     className="w-full dark:bg-black/40 bg-slate-50 dark:border-white/10 border-slate-200 border rounded-lg py-2.5 pl-9 pr-3 dark:text-white text-slate-900 focus:outline-none focus:border-indigo-500 transition-colors dark:[color-scheme:dark] text-xs"
                                 />
                             </div>
                         </div>
 
-                        {/* Location */}
-                        <div className="space-y-1.5">
-                            <div className="flex items-center justify-between">
-                                <label className="text-[10px] font-bold dark:text-slate-400 text-slate-500 uppercase tracking-wider">{t('cal_location_label') || 'Location'}</label>
-                                <div className="text-[10px] font-bold text-emerald-500 flex items-center gap-1">
-                                    <MapPin className="w-2.5 h-2.5" />
-                                    {gpsLoading ? 'Detecting...' : 'Auto-Detected'}
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                                <input
-                                    type="text"
-                                    value={formData.state}
-                                    readOnly
-                                    placeholder={t('cal_state_placeholder') || 'State'}
-                                    className="w-full dark:bg-black/20 bg-slate-100 dark:border-white/5 border-slate-200 border rounded-lg py-2 px-3 dark:text-slate-300 text-slate-600 text-xs focus:outline-none cursor-not-allowed"
-                                />
-                                <input
-                                    type="text"
-                                    value={formData.district}
-                                    readOnly
-                                    placeholder={t('cal_district_placeholder') || 'District'}
-                                    className="w-full dark:bg-black/20 bg-slate-100 dark:border-white/5 border-slate-200 border rounded-lg py-2 px-3 dark:text-slate-300 text-slate-600 text-xs focus:outline-none cursor-not-allowed"
-                                />
-                            </div>
-                        </div>
+                        {/* ── Patta/Chitta location (no GPS) ── */}
+                        <LocationSelector onChange={setLocation} />
 
+                        {/* Generate button */}
                         <button
                             onClick={handleGenerate}
-                            disabled={isGenerating || (!selectedCrop && !cropInput) || !formData.state}
+                            disabled={isGenerating || !canGenerate}
                             className="w-full mt-1 bg-indigo-600 hover:bg-indigo-500 disabled:dark:bg-slate-800 disabled:bg-slate-200 disabled:dark:text-slate-500 disabled:text-slate-400 text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-1.5 text-xs transition-all shadow-[0_0_15px_rgba(79,70,229,0.3)] disabled:shadow-none"
                         >
                             {isGenerating ? (
@@ -267,57 +289,71 @@ export default function CropCalendar() {
                                 </>
                             )}
                         </button>
+
+                        {/* Hint when district not selected */}
+                        {!location.district && (
+                            <p className="text-[10px] text-slate-400 text-center">
+                                Select your District to enable generation
+                            </p>
+                        )}
                     </motion.div>
 
-                    {/* Right Pane: Results Timeline */}
+                    {/* ── Right pane ── */}
                     <div className="flex-1">
                         <AnimatePresence mode="wait">
+
                             {!calendarData && !isGenerating && (
-                                <motion.div 
+                                <motion.div
+                                    key="empty"
                                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                    className="h-full flex flex-col items-center justify-center min-h-[380px] dark:border-white/5 border-slate-200 border rounded-2xl p-6 text-center dark:bg-gradient-to-b dark:from-[#0A1525] dark:to-[#050B14] bg-slate-50"
+                                    className="h-full flex flex-col items-center justify-center min-h-[320px] dark:border-white/5 border-slate-200 border rounded-2xl p-6 text-center dark:bg-gradient-to-b dark:from-[#0A1525] dark:to-[#050B14] bg-slate-50"
                                 >
                                     <div className="w-16 h-16 bg-indigo-500/10 rounded-full flex items-center justify-center mb-3">
                                         <Sprout className="w-7 h-7 text-indigo-400" />
                                     </div>
-                                    <h3 className="text-base font-black dark:text-white text-slate-800 mb-1.5">{t('cal_empty_title') || 'Ready to Plan Your Season'}</h3>
+                                    <h3 className="text-base font-black dark:text-white text-slate-800 mb-1.5">
+                                        {t('cal_empty_title') || 'Ready to Plan Your Season'}
+                                    </h3>
                                     <p className="dark:text-slate-400 text-slate-500 text-xs max-w-sm leading-relaxed">
-                                        Enter any crop name in your local language. Our AI will identify the species, fetch live weather data, and generate a dynamic lifecycle plan.
+                                        Select your State and District, type a crop name, and click Generate. No GPS needed.
                                     </p>
                                 </motion.div>
                             )}
 
                             {isGenerating && (
-                                <motion.div 
+                                <motion.div
+                                    key="loading"
                                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                    className="h-full flex flex-col items-center justify-center min-h-[380px]"
+                                    className="h-full flex flex-col items-center justify-center min-h-[320px]"
                                 >
                                     <div className="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-4" />
                                     <p className="text-indigo-400 font-bold animate-pulse tracking-widest uppercase text-xs">
-                                        {t('cal_generating') || 'AI Agronomist is building your plan...'}
+                                        {t('cal_generating') || 'AI Agronomist building your plan...'}
                                     </p>
                                 </motion.div>
                             )}
 
                             {calendarData && !isGenerating && (
-                                <motion.div 
+                                <motion.div
+                                    key="results"
                                     initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                                     className="flex flex-col gap-3"
                                 >
-                                    {/* AI Banner */}
+                                    {/* Warning banner */}
                                     {calendarData.ai_warnings_banner && (
                                         <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-3 flex items-center gap-3">
-                                            <AlertTriangle className="w-4 h-4 text-rose-500 flex-shrink-0" />
+                                            <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
                                             <p className="dark:text-rose-200 text-rose-700 text-xs font-medium">{calendarData.ai_warnings_banner}</p>
                                         </div>
                                     )}
 
-                                    {/* Core Metrics Grid */}
+                                    {/* Metrics */}
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                        {[{ label: 'Duration', value: <>{calendarData.total_duration_days} <span className="text-[10px] dark:text-slate-400 text-slate-500 font-bold">days</span></>, cls: 'dark:text-white text-slate-900' },
-                                          { label: 'Yield Conf.', value: `${calendarData.yield_confidence}%`, cls: 'text-emerald-500' },
-                                          { label: 'Difficulty', value: calendarData.farming_difficulty, cls: getRiskColor(calendarData.farming_difficulty).split(' ')[0] },
-                                          { label: 'Water Need', value: <span className="flex items-center gap-1"><WaterDrop className="w-3 h-3" />{calendarData.water_intensity}</span>, cls: 'text-blue-500' }
+                                        {[
+                                            { label: 'Duration',   value: <>{calendarData.total_duration_days} <span className="text-[10px] dark:text-slate-400 font-bold">days</span></>, cls: 'dark:text-white text-slate-900' },
+                                            { label: 'Yield Conf.', value: `${calendarData.yield_confidence}%`, cls: 'text-emerald-500' },
+                                            { label: 'Difficulty', value: calendarData.farming_difficulty, cls: getRiskColor(calendarData.farming_difficulty).split(' ')[0] },
+                                            { label: 'Water Need', value: <span className="flex items-center gap-1"><WaterDrop className="w-3 h-3" />{calendarData.water_intensity}</span>, cls: 'text-blue-500' },
                                         ].map(({ label, value, cls }) => (
                                             <div key={label} className="dark:bg-[#0A1525] bg-white dark:border-white/5 border-slate-200 border rounded-xl p-3">
                                                 <div className="dark:text-slate-500 text-slate-400 text-[9px] font-bold uppercase tracking-widest mb-0.5">{label}</div>
@@ -328,15 +364,13 @@ export default function CropCalendar() {
 
                                     {/* AI Summary */}
                                     <div className="relative overflow-hidden dark:bg-[#0A1525] bg-indigo-50 dark:border-indigo-500/30 border-indigo-200 border rounded-2xl p-4 shadow-sm">
-                                        {/* Premium Top Highlight */}
                                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500 opacity-80" />
-                                        
                                         <div className="flex items-start gap-3 mt-1">
                                             <div className="p-2 dark:bg-indigo-500/20 bg-indigo-500/10 rounded-xl shrink-0 dark:border dark:border-indigo-500/20">
                                                 <TrendingUp className="w-4 h-4 dark:text-indigo-400 text-indigo-600" />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <div className="flex flex-col md:flex-row md:items-center justify-between mb-2 gap-2">
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-2">
                                                     <h3 className="dark:text-indigo-50 text-slate-900 font-black text-sm tracking-tight flex items-center gap-1.5">
                                                         AI Agronomist Report
                                                         <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20" />
@@ -365,72 +399,76 @@ export default function CropCalendar() {
                                     </div>
 
                                     {/* Timeline */}
-                                    <div className="space-y-3 mt-1">
+                                    <div className="space-y-3">
                                         <div className="flex items-center justify-between">
                                             <h3 className="text-sm font-bold dark:text-white text-slate-800 flex items-center gap-1.5">
                                                 <Calendar className="w-3.5 h-3.5 text-emerald-500" />
                                                 Dynamic Lifecycle Phases
                                             </h3>
-                                            <div className="text-[10px] dark:text-slate-500 text-slate-400 font-bold">{calendarData.timeline.length} AI-Generated Stages</div>
+                                            <div className="text-[10px] dark:text-slate-500 text-slate-400 font-bold">
+                                                {calendarData.timeline.length} AI-Generated Stages
+                                            </div>
                                         </div>
-                                        
-                                        <div className="relative pl-4 md:pl-0">
-                                            <div className="absolute left-[19px] top-3 bottom-3 w-0.5 dark:bg-white/10 bg-slate-200 md:hidden" />
-                                            
+
+                                        <div className="space-y-4">
                                             {calendarData.timeline.map((stage, idx) => (
-                                                <motion.div 
+                                                <motion.div
                                                     key={idx}
-                                                    initial={{ opacity: 0, x: 20 }}
-                                                    animate={{ opacity: 1, x: 0 }}
-                                                    transition={{ delay: idx * 0.08 }}
-                                                    className="relative flex flex-col md:flex-row gap-4 mb-6 group"
+                                                    initial={{ opacity: 0, y: 12 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ delay: idx * 0.06 }}
+                                                    className="dark:bg-[#0A1525] bg-white dark:border-white/5 border-slate-200 border rounded-2xl p-4 shadow-sm relative overflow-hidden"
                                                 >
-                                                    <div className="md:w-36 flex-shrink-0 flex md:flex-col items-center md:items-end md:text-right gap-3 md:gap-0.5 z-10">
-                                                        <div className="w-4 h-4 rounded-full dark:bg-[#0A1525] bg-white border-2 border-indigo-500 flex items-center justify-center md:absolute md:left-[152px] md:top-4 shadow-[0_0_10px_rgba(99,102,241,0.4)]">
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                                                    {/* Progress stripe */}
+                                                    <div className="absolute top-0 left-0 h-0.5 bg-indigo-500/50" style={{ width: `${((idx + 1) / calendarData.timeline.length) * 100}%` }} />
+
+                                                    {/* Stage header */}
+                                                    <div className="flex items-start justify-between gap-3 mb-3">
+                                                        <div>
+                                                            <div className="flex items-center gap-2 mb-0.5">
+                                                                <span className="w-5 h-5 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-[9px] font-black text-indigo-400 shrink-0">
+                                                                    {idx + 1}
+                                                                </span>
+                                                                <h4 className="text-sm font-bold dark:text-white text-slate-800">{stage.stage}</h4>
+                                                            </div>
+                                                            <p className="dark:text-slate-400 text-slate-500 text-xs leading-relaxed pl-7">{stage.description}</p>
                                                         </div>
-                                                        <div className="md:pt-3">
+                                                        <div className="text-right shrink-0">
                                                             <div className="text-indigo-500 font-black text-sm">
                                                                 {new Date(stage.start_date).toLocaleDateString(language === 'TA' ? 'ta-IN' : 'en-IN', { month: 'short', day: 'numeric' })}
                                                             </div>
-                                                            <div className="dark:text-slate-500 text-slate-400 text-[10px] font-bold uppercase">{stage.duration_days} days</div>
+                                                            <div className="dark:text-slate-500 text-slate-400 text-[10px] font-bold uppercase">{stage.duration_days}d</div>
                                                         </div>
                                                     </div>
 
-                                                    <div className="hidden md:block absolute left-[160px] top-8 bottom-[-40px] w-0.5 dark:bg-white/10 bg-slate-200 group-last:hidden" />
-
-                                                    <div className="flex-1 dark:bg-[#0A1525] bg-white dark:border-white/5 border-slate-200 border rounded-2xl p-4 ml-6 md:ml-8 shadow-sm hover:shadow-md transition-all relative overflow-hidden">
-                                                        <div className="absolute top-0 left-0 h-0.5 bg-indigo-500/50" style={{ width: `${((idx+1)/calendarData.timeline.length)*100}%` }} />
-                                                        <h4 className="text-sm font-bold dark:text-white text-slate-800 mb-1">{stage.stage}</h4>
-                                                        <p className="dark:text-slate-400 text-slate-500 text-xs mb-3 leading-relaxed">{stage.description}</p>
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                                            <div className="dark:bg-white/[0.02] bg-slate-50 rounded-xl p-3 flex gap-2 dark:border-white/5 border-slate-200 border">
-                                                                <Droplets className="w-3.5 h-3.5 text-blue-500 flex-shrink-0 mt-0.5" />
-                                                                <div>
-                                                                    <div className="text-[9px] dark:text-slate-500 text-slate-400 font-bold uppercase mb-0.5">Irrigation</div>
-                                                                    <div className="text-xs dark:text-slate-300 text-slate-600">{stage.advisory.irrigation}</div>
-                                                                </div>
+                                                    {/* Advisory grid */}
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                        <div className="dark:bg-white/[0.02] bg-slate-50 rounded-xl p-3 flex gap-2 dark:border-white/5 border-slate-200 border">
+                                                            <Droplets className="w-3.5 h-3.5 text-blue-500 shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <div className="text-[9px] dark:text-slate-500 text-slate-400 font-bold uppercase mb-0.5">Irrigation</div>
+                                                                <div className="text-xs dark:text-slate-300 text-slate-600">{stage.advisory.irrigation}</div>
                                                             </div>
-                                                            <div className="dark:bg-white/[0.02] bg-slate-50 rounded-xl p-3 flex gap-2 dark:border-white/5 border-slate-200 border">
-                                                                <Leaf className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                                                                <div>
-                                                                    <div className="text-[9px] dark:text-slate-500 text-slate-400 font-bold uppercase mb-0.5">Fertilizer</div>
-                                                                    <div className="text-xs dark:text-slate-300 text-slate-600">{stage.advisory.fertilizer}</div>
-                                                                </div>
+                                                        </div>
+                                                        <div className="dark:bg-white/[0.02] bg-slate-50 rounded-xl p-3 flex gap-2 dark:border-white/5 border-slate-200 border">
+                                                            <Leaf className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <div className="text-[9px] dark:text-slate-500 text-slate-400 font-bold uppercase mb-0.5">Fertilizer</div>
+                                                                <div className="text-xs dark:text-slate-300 text-slate-600">{stage.advisory.fertilizer}</div>
                                                             </div>
-                                                            <div className={`rounded-xl p-3 flex gap-2 border ${getRiskColor(stage.advisory.risk_level)}`}>
-                                                                <Bug className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                                                                <div>
-                                                                    <div className="text-[9px] font-bold uppercase mb-0.5 opacity-70">Pest Risk: {stage.advisory.risk_level}</div>
-                                                                    <div className="text-xs font-medium">{stage.advisory.pest}</div>
-                                                                </div>
+                                                        </div>
+                                                        <div className={`rounded-xl p-3 flex gap-2 border ${getRiskColor(stage.advisory.risk_level)}`}>
+                                                            <Bug className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <div className="text-[9px] font-bold uppercase mb-0.5 opacity-70">Pest Risk: {stage.advisory.risk_level}</div>
+                                                                <div className="text-xs font-medium">{stage.advisory.pest}</div>
                                                             </div>
-                                                            <div className="dark:bg-white/[0.02] bg-slate-50 rounded-xl p-3 flex gap-2 dark:border-white/5 border-slate-200 border">
-                                                                <CloudRain className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0 mt-0.5" />
-                                                                <div>
-                                                                    <div className="text-[9px] dark:text-slate-500 text-slate-400 font-bold uppercase mb-0.5">Weather Impact</div>
-                                                                    <div className="text-xs dark:text-slate-300 text-slate-600">{stage.weather_suggestion}</div>
-                                                                </div>
+                                                        </div>
+                                                        <div className="dark:bg-white/[0.02] bg-slate-50 rounded-xl p-3 flex gap-2 dark:border-white/5 border-slate-200 border">
+                                                            <CloudRain className="w-3.5 h-3.5 text-indigo-500 shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <div className="text-[9px] dark:text-slate-500 text-slate-400 font-bold uppercase mb-0.5">Weather</div>
+                                                                <div className="text-xs dark:text-slate-300 text-slate-600">{stage.weather_suggestion}</div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -440,16 +478,16 @@ export default function CropCalendar() {
                                     </div>
 
                                     {/* Market & Warnings */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         <div className="dark:bg-[#080F1E] bg-white dark:border-white/5 border-slate-200 border rounded-2xl p-4 flex items-start gap-3">
-                                            <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-500 shrink-0"><DollarSign className="w-4 h-4"/></div>
+                                            <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-500 shrink-0"><DollarSign className="w-4 h-4" /></div>
                                             <div>
                                                 <h4 className="dark:text-white text-slate-800 font-bold text-xs mb-1">Market Outlook</h4>
                                                 <p className="dark:text-slate-400 text-slate-500 text-xs leading-relaxed">{calendarData.market_outlook}</p>
                                             </div>
                                         </div>
                                         <div className="dark:bg-[#080F1E] bg-white dark:border-white/5 border-slate-200 border rounded-2xl p-4 flex items-start gap-3">
-                                            <div className="p-2 bg-orange-500/10 rounded-xl text-orange-500 shrink-0"><AlertTriangle className="w-4 h-4"/></div>
+                                            <div className="p-2 bg-orange-500/10 rounded-xl text-orange-500 shrink-0"><AlertTriangle className="w-4 h-4" /></div>
                                             <div>
                                                 <h4 className="dark:text-white text-slate-800 font-bold text-xs mb-1">Critical Warnings</h4>
                                                 <ul className="dark:text-slate-400 text-slate-500 text-xs list-disc pl-3 space-y-1">
