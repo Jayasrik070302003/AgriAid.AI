@@ -303,9 +303,9 @@ const ImageUploadForm = () => {
                         const addr = data.address;
                         const detectedCountry = addr.country || "India";
                         const detectedState = addr.state || "";
-                        const detectedDistrict = addr.state_district || addr.district || addr.county || "";
-                        const detectedTaluk = addr.county || addr.subdistrict || "";
-                        const detectedVillage = addr.village || addr.town || addr.suburb || addr.city || addr.neighbourhood || addr.hamlet || "";
+                        const detectedDistrict = addr.state_district || addr.district || addr.county || addr.city_district || addr.municipality || addr.city || "";
+                        const detectedTaluk = addr.subdistrict || addr.suburb || addr.county || "";
+                        const detectedVillage = addr.village || addr.town || addr.suburb || addr.city || addr.neighbourhood || addr.hamlet || addr.road || "";
                         const detectedPostcode = addr.postcode || "";
 
                         setCountry(detectedCountry);
@@ -316,7 +316,7 @@ const ImageUploadForm = () => {
                         setPincode(detectedPostcode);
                         setIsLocationLocked(true);
                         
-                        if (!detectedState || !detectedDistrict) {
+                        if (!detectedState) {
                             setLocationConfidenceLow(true);
                         }
 
@@ -428,9 +428,9 @@ const ImageUploadForm = () => {
                     const osmData = await osmRes.json();
                     if (osmData && osmData.address) {
                         const addr = osmData.address;
-                        const detectedDistrict = addr.state_district || addr.district || addr.county || "";
-                        const detectedTaluk = addr.county || addr.subdistrict || "";
-                        const detectedVillage = addr.village || addr.town || addr.suburb || addr.city || addr.neighbourhood || addr.hamlet || "";
+                        const detectedDistrict = addr.state_district || addr.district || addr.county || addr.city_district || addr.municipality || addr.city || "";
+                        const detectedTaluk = addr.subdistrict || addr.suburb || addr.county || "";
+                        const detectedVillage = addr.village || addr.town || addr.suburb || addr.city || addr.neighbourhood || addr.hamlet || addr.road || "";
 
                         setDistrict(detectedDistrict.replace(" District", "").replace(" Division", ""));
                         setTaluk(detectedTaluk.replace(" Taluk", "").replace(" Sub-district", "").replace(" Tehsil", ""));
